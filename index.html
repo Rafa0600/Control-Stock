@@ -596,7 +596,7 @@
                 <span>🎨 Color / 📏 Talle</span>
                 <div style="display:flex;align-items:center;gap:6px;">
                     <button class="clear-filters-btn" id="clearFiltersBtn" onclick="event.stopPropagation(); clearAllFilters();">✕ Limpiar</button>
-                    <button class="multi-toggle" id="multiToggle" onclick="event.stopPropagation(); toggleMultiSelect();">☰ Multi Color</button>
+                    <button class="multi-toggle" id="galleryChip" onclick="event.stopPropagation(); openColorGallery();" style="display:none;">🖼️ Color x Foto</button>
                     <div class="active-filters" id="activeFilters"></div>
                     <span class="filters-arrow">▼</span>
                 </div>
@@ -604,7 +604,7 @@
             <div class="filters-body">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <div class="filter-section-title">🎨 Colores</div>
-                    <button class="color-gallery-btn" id="colorGalleryBtn" onclick="openColorGallery()" style="display:none;">🖼️ Ver por imagen</button>
+                    <button class="multi-toggle" id="multiToggle" onclick="toggleMultiSelect();">☰ Multi Color</button>
                 </div>
                 <div class="filter-options" id="colorOptions"></div>
                 <div class="filter-section-title">📏 Talles</div>
@@ -899,7 +899,7 @@
             const hasSearch = state.search.length > 0;
             const preResults = hasSearch ? getPreFilteredResults() : [];
             const hasMultipleColors = hasSearch && new Set(preResults.map(p => p.color).filter(Boolean)).size > 1;
-            $('colorGalleryBtn').style.display = hasMultipleColors ? 'inline-block' : 'none';
+            $('galleryChip').style.display = hasMultipleColors ? '' : 'none';
         }
         
         // === MULTI-SELECT TOGGLE ===
