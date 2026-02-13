@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mikra - Control de Stock</title>
-    
-    <!-- PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#1a2744">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -50,6 +48,7 @@
         .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); }
         .sync-dot.loading { background: var(--warning); animation: pulse 1s infinite; }
         .sync-dot.error { background: var(--danger); }
+        .sync-bar.error { background: rgba(248, 113, 113, 0.2); border-bottom: 2px solid var(--danger); }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         
         .sync-btn {
@@ -125,8 +124,114 @@
         }
         .filter-opt:hover { border-color: var(--primary); color: var(--primary); }
         .filter-opt.active { background: var(--primary); border-color: var(--primary); color: white; }
+        /* Color sin stock: tachado, sin badge */
+        .filter-opt.no-stock-color { 
+            opacity: 0.45; text-decoration: line-through; text-decoration-color: var(--danger);
+        }
+        .filter-opt.active.no-stock-color { opacity: 0.8; }
+        
+        /* Botón multi-select */
+        .multi-toggle {
+            padding: 4px 10px; background: var(--bg-input); border: 1px solid var(--border);
+            border-radius: 6px; font-size: 0.7em; color: var(--text-secondary); cursor: pointer;
+            margin-left: auto;
+        }
+        .multi-toggle:hover { border-color: var(--primary); color: var(--primary); }
+        .multi-toggle.active { background: var(--purple); border-color: var(--purple); color: white; }
+        
+        /* Botón limpiar filtros */
+        .clear-filters-btn {
+            padding: 4px 10px; background: var(--danger); border: none;
+            border-radius: 6px; font-size: 0.7em; color: white; cursor: pointer;
+            font-weight: 600; display: none;
+        }
+        .clear-filters-btn.show { display: inline-block; }
+        
+        /* FOTOS */
+        .product-thumb {
+            width: 40px; height: 40px; border-radius: 6px; object-fit: cover;
+            background: var(--bg-input); cursor: pointer; flex-shrink: 0;
+            border: 1px solid var(--border); display: none;
+        }
+        .show-images .product-thumb { display: block; }
+        .product-thumb-placeholder {
+            width: 40px; height: 40px; border-radius: 6px; background: var(--bg-input);
+            display: none; align-items: center; justify-content: center; font-size: 1em;
+            flex-shrink: 0; border: 1px solid var(--border);
+        }
+        .show-images .product-thumb-placeholder { display: flex; }
+        .img-modal-overlay {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+            z-index: 400; align-items: center; justify-content: center; padding: 20px;
+        }
+        .img-modal-overlay.show { display: flex; }
+        .img-modal-overlay img { max-width: 90vw; max-height: 80vh; border-radius: 12px; object-fit: contain; }
+        .img-modal-close {
+            position: absolute; top: 16px; right: 16px; background: rgba(255,255,255,0.2);
+            border: none; color: white; font-size: 1.5em; width: 40px; height: 40px;
+            border-radius: 50%; cursor: pointer;
+        }
         .active-filters { display: flex; gap: 6px; margin-left: 10px; }
         .active-filter-tag { background: var(--primary); color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.7em; }
+        
+        /* GALERÍA DE COLORES POR IMAGEN */
+        .color-gallery-btn {
+            padding: 4px 10px; background: var(--bg-input); border: 1px solid var(--border);
+            border-radius: 6px; font-size: 0.7em; color: var(--text-secondary); cursor: pointer;
+        }
+        .color-gallery-btn:hover { border-color: var(--primary); color: var(--primary); }
+        
+        .color-gallery-overlay {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92);
+            z-index: 500; flex-direction: column;
+        }
+        .color-gallery-overlay.show { display: flex; }
+        
+        .color-gallery-header {
+            padding: 14px 16px; display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--border); flex-shrink: 0;
+        }
+        .color-gallery-title { font-weight: 700; font-size: 1em; color: var(--primary); }
+        .color-gallery-close {
+            background: rgba(255,255,255,0.15); border: none; color: white;
+            font-size: 1.3em; width: 36px; height: 36px; border-radius: 50%; cursor: pointer;
+        }
+        
+        .color-gallery-grid {
+            flex: 1; overflow-y: auto; padding: 10px;
+            display: grid; grid-template-columns: repeat(2, 1fr);
+            gap: 8px; align-content: start;
+            -webkit-overflow-scrolling: touch;
+        }
+        @media (min-width: 600px) {
+            .color-gallery-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; padding: 12px; }
+        }
+        
+        .color-gallery-item {
+            background: var(--bg-card); border: 2px solid var(--border); border-radius: 10px;
+            overflow: hidden; cursor: pointer; transition: all 0.2s;
+        }
+        .color-gallery-item:hover { border-color: var(--primary); transform: scale(1.03); }
+        .color-gallery-item.active { border-color: var(--primary); box-shadow: 0 0 12px rgba(79,172,254,0.4); }
+        .color-gallery-item.no-stock-gallery { opacity: 0.4; }
+        
+        .color-gallery-img {
+            width: 100%; aspect-ratio: 1; object-fit: cover; background: var(--bg-input);
+            display: block;
+        }
+        .color-gallery-img-placeholder {
+            width: 100%; aspect-ratio: 1; background: var(--bg-input);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2.5em; color: var(--text-secondary);
+        }
+        .color-gallery-label {
+            padding: 8px; text-align: center; font-size: 0.75em; font-weight: 600;
+            color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .color-gallery-stock {
+            font-size: 0.65em; color: var(--text-secondary); display: block; margin-top: 2px;
+        }
+        .color-gallery-stock.out { color: var(--danger); }
         
         .results-info { font-size: 0.8em; color: var(--text-secondary); padding: 8px 0; }
         .results-info strong { color: var(--primary); }
@@ -141,7 +246,7 @@
         
         .product-item {
             background: var(--bg-card); padding: 14px 16px;
-            display: flex; justify-content: space-between; align-items: center;
+            display: flex; justify-content: space-between; align-items: center; gap: 10px;
         }
         .product-item:hover { background: var(--bg-input); }
         .product-item.modified { background: rgba(167, 139, 250, 0.15); border-left: 3px solid var(--purple); }
@@ -475,6 +580,7 @@
             <div class="filter-chip low" data-stock="low">🔶 Bajo Stock</div>
             <div class="filter-chip out" data-stock="no">❌ Sin Stock</div>
             <div class="filter-chip" id="locationBtn" onclick="toggleLocationSearch()">📍 Ubicación</div>
+            <div class="filter-chip" id="photosBtn" onclick="togglePhotos()">📷 Fotos</div>
         </div>
 
         <div class="location-search" id="locationSearch" style="display: none; margin-bottom: 10px;">
@@ -488,17 +594,30 @@
         <div class="filters-collapse" id="filtersCollapse">
             <div class="filters-header" onclick="toggleFilters()">
                 <span>🎨 Color / 📏 Talle</span>
-                <div style="display:flex;align-items:center;">
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <button class="clear-filters-btn" id="clearFiltersBtn" onclick="event.stopPropagation(); clearAllFilters();">✕ Limpiar</button>
+                    <button class="multi-toggle" id="multiToggle" onclick="event.stopPropagation(); toggleMultiSelect();">☰ Multi Color</button>
                     <div class="active-filters" id="activeFilters"></div>
                     <span class="filters-arrow">▼</span>
                 </div>
             </div>
             <div class="filters-body">
-                <div class="filter-section-title">🎨 Colores</div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div class="filter-section-title">🎨 Colores</div>
+                    <button class="color-gallery-btn" id="colorGalleryBtn" onclick="openColorGallery()" style="display:none;">🖼️ Ver por imagen</button>
+                </div>
                 <div class="filter-options" id="colorOptions"></div>
                 <div class="filter-section-title">📏 Talles</div>
                 <div class="filter-options" id="sizeOptions"></div>
             </div>
+        </div>
+
+        <div class="color-gallery-overlay" id="colorGallery">
+            <div class="color-gallery-header">
+                <div class="color-gallery-title" id="colorGalleryTitle">🖼️ Colores</div>
+                <button class="color-gallery-close" onclick="closeColorGallery()">✕</button>
+            </div>
+            <div class="color-gallery-grid" id="colorGalleryGrid"></div>
         </div>
 
         <div class="results-info">
@@ -538,48 +657,273 @@
         </div>
     </div>
 
+    <div class="img-modal-overlay" id="imgModal" onclick="closeImgModal()">
+        <button class="img-modal-close" onclick="closeImgModal()">✕</button>
+        <img id="imgModalSrc" src="" alt="Producto">
+    </div>
+
     <div class="toast" id="toast"></div>
 
     <script>
-        // EXACTAMENTE LA MISMA URL Y LÓGICA DEL ARCHIVO QUE FUNCIONA
         const API_URL = 'https://script.google.com/macros/s/AKfycbxKNkORm0oMVtcODYJC3UNbxwn3_O9tP7_9DS9R35f2d6JZTAn6UBWrYH--Bp0Y_LWV/exec';
+        // API del inventario (tiene las imágenes)
+        const IMAGES_API_URL = 'https://script.google.com/macros/s/AKfycbxiST8drkv_bXz5n8ZW8ZzeWNotXAb24Z8MCW7FU8KoGoqf0Th10CHBR-9vQI5MbSPb/exec';
         const SIZE_ORDER = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '2XL', '3XL'];
         
         let PRODUCTS = [];
         let UNIQUE_ARTICLES = [];
+        let IMAGES_MAP = {};
         
         const state = {
             search: '',
             searchExact: false,
             stock: 'all',
-            color: '',
-            size: '',
+            colors: [],
+            sizes: [],
             location: '',
             filtered: [],
-            modifications: {}, // { productId: { oldStock: X, newStock: Y, product: {...} } }
+            modifications: {},
             page: 1,
             pageSize: 50,
-            lowStockThreshold: 5 // Umbral configurable para bajo stock
+            lowStockThreshold: 5,
+            showImages: false,
+            multiSelect: false  // Toggle para selección múltiple
         };
         
         function $(id) { return document.getElementById(id); }
         
-        // === PERSISTENCIA DE MODIFICACIONES ===
+        // === PERSISTENCIA ===
         function saveModifications() {
-            try {
-                localStorage.setItem('mikra_modifications', JSON.stringify(state.modifications));
-            } catch(e) {}
+            try { localStorage.setItem('mikra_modifications', JSON.stringify(state.modifications)); } catch(e) {}
         }
-        
         function loadModifications() {
             try {
                 const saved = localStorage.getItem('mikra_modifications');
-                if (saved) {
-                    state.modifications = JSON.parse(saved);
-                }
+                if (saved) state.modifications = JSON.parse(saved);
             } catch(e) {}
         }
-        // === FIN PERSISTENCIA ===
+        
+        // === IMÁGENES ===
+        function loadImagesFromCache() {
+            try { IMAGES_MAP = JSON.parse(localStorage.getItem('mikra_images') || '{}'); } catch(e) {}
+        }
+        
+        async function loadImagesFromAPI() {
+            // Si ya hay imágenes en caché, no recargar
+            if (Object.keys(IMAGES_MAP).length > 0) return;
+            try {
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 10000);
+                const resp = await fetch(IMAGES_API_URL, { signal: controller.signal });
+                clearTimeout(timeout);
+                const data = await resp.json();
+                if (data.images) {
+                    IMAGES_MAP = data.images;
+                    localStorage.setItem('mikra_images', JSON.stringify(IMAGES_MAP));
+                }
+            } catch(e) { /* silencioso, usará caché */ }
+        }
+        
+        function getProductImage(codigo, product) {
+            if (!codigo) return '';
+            // 1. Buscar imagen directa por código
+            let url = IMAGES_MAP[codigo] || IMAGES_MAP[String(codigo)] || '';
+            
+            // 2. Fallback: buscar en otro talle del mismo artículo y color
+            if (!url && product) {
+                const nombre = (product.titulo || product.articulo || '').toLowerCase();
+                const color = (product.color || '').toLowerCase();
+                if (nombre && color) {
+                    for (const p of PRODUCTS) {
+                        if (p.codigo === codigo) continue;
+                        const pNombre = (p.titulo || p.articulo || '').toLowerCase();
+                        const pColor = (p.color || '').toLowerCase();
+                        if (pNombre === nombre && pColor === color) {
+                            url = IMAGES_MAP[p.codigo] || IMAGES_MAP[String(p.codigo)] || '';
+                            if (url) break;
+                        }
+                    }
+                }
+            }
+            
+            if (!url) return '';
+            return url.replace(/-O\.jpg$/i, '-S.jpg');
+        }
+        
+        function getProductImageFull(codigo, product) {
+            if (!codigo) return '';
+            let url = IMAGES_MAP[codigo] || IMAGES_MAP[String(codigo)] || '';
+            
+            if (!url && product) {
+                const nombre = (product.titulo || product.articulo || '').toLowerCase();
+                const color = (product.color || '').toLowerCase();
+                if (nombre && color) {
+                    for (const p of PRODUCTS) {
+                        if (p.codigo === codigo) continue;
+                        const pNombre = (p.titulo || p.articulo || '').toLowerCase();
+                        const pColor = (p.color || '').toLowerCase();
+                        if (pNombre === nombre && pColor === color) {
+                            url = IMAGES_MAP[p.codigo] || IMAGES_MAP[String(p.codigo)] || '';
+                            if (url) break;
+                        }
+                    }
+                }
+            }
+            
+            return url || '';
+        }
+        
+        function showImgModal(codigo, productId) {
+            const product = productId ? PRODUCTS.find(p => p.id === productId) : null;
+            const url = getProductImageFull(codigo, product);
+            if (!url) return;
+            $('imgModalSrc').src = url;
+            $('imgModal').classList.add('show');
+        }
+        
+        function closeImgModal() {
+            $('imgModal').classList.remove('show');
+            $('imgModalSrc').src = '';
+        }
+        
+        function togglePhotos() {
+            state.showImages = !state.showImages;
+            $('photosBtn').classList.toggle('active', state.showImages);
+            $('productList').classList.toggle('show-images', state.showImages);
+        }
+        
+        // === GALERÍA DE COLORES POR IMAGEN ===
+        function openColorGallery() {
+            // Obtener los colores disponibles del artículo buscado
+            const results = getPreFilteredResults();
+            const colorData = {};
+            
+            results.forEach(p => {
+                if (!p.color) return;
+                if (!colorData[p.color]) {
+                    colorData[p.color] = { color: p.color, totalStock: 0, imgUrl: '', product: null };
+                }
+                colorData[p.color].totalStock += p.stock || 0;
+                // Buscar imagen para este color si aún no tenemos
+                if (!colorData[p.color].imgUrl) {
+                    const img = getProductImageFull(p.codigo, p);
+                    if (img) {
+                        colorData[p.color].imgUrl = img;
+                        colorData[p.color].product = p;
+                    }
+                }
+            });
+            
+            const colors = Object.values(colorData).sort((a, b) => a.color.localeCompare(b.color));
+            
+            if (!colors.length) {
+                toast('No hay colores para mostrar', 'warning');
+                return;
+            }
+            
+            // Título
+            const articleName = state.search || 'Artículo';
+            $('colorGalleryTitle').textContent = '🖼️ ' + articleName;
+            
+            // Generar grilla
+            let html = '';
+            colors.forEach(c => {
+                const isActive = state.colors.includes(c.color);
+                const noStock = c.totalStock <= 0;
+                const thumbUrl = c.imgUrl ? c.imgUrl.replace(/-O\.jpg$/i, '-I.jpg') : '';
+                
+                html += '<div class="color-gallery-item' + (isActive ? ' active' : '') + (noStock ? ' no-stock-gallery' : '') + '" onclick="selectColorFromGallery(\'' + c.color.replace(/'/g, "\\'") + '\')">';
+                
+                if (thumbUrl) {
+                    html += '<img class="color-gallery-img" loading="lazy" src="' + thumbUrl + '" onerror="this.outerHTML=\'<div class=color-gallery-img-placeholder>📦</div>\'">';
+                } else {
+                    html += '<div class="color-gallery-img-placeholder">📦</div>';
+                }
+                
+                html += '<div class="color-gallery-label">' + c.color;
+                html += '<span class="color-gallery-stock' + (noStock ? ' out' : '') + '">' + (noStock ? 'Sin stock' : c.totalStock + ' uds') + '</span>';
+                html += '</div></div>';
+            });
+            
+            $('colorGalleryGrid').innerHTML = html;
+            $('colorGallery').classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function closeColorGallery() {
+            $('colorGallery').classList.remove('show');
+            document.body.style.overflow = '';
+        }
+        
+        function selectColorFromGallery(color) {
+            if (state.multiSelect) {
+                const idx = state.colors.indexOf(color);
+                if (idx > -1) state.colors.splice(idx, 1);
+                else state.colors.push(color);
+            } else {
+                state.colors = state.colors.length === 1 && state.colors[0] === color ? [] : [color];
+            }
+            closeColorGallery();
+            applyFilters();
+        }
+        
+        // Obtener productos pre-filtrados (antes de color/talle) para la galería
+        function getPreFilteredResults() {
+            let r = [...PRODUCTS];
+            if (state.stock === 'yes') r = r.filter(p => p.stock > 0);
+            else if (state.stock === 'low') r = r.filter(p => p.stock > 0 && p.stock <= state.lowStockThreshold);
+            else if (state.stock === 'no') r = r.filter(p => p.stock === 0);
+            else if (state.stock === 'critical') r = r.filter(p => p.stock <= state.lowStockThreshold);
+            
+            if (state.search) {
+                const q = state.search.toLowerCase();
+                if (state.searchExact) {
+                    r = r.filter(p => (p.titulo?.toLowerCase() === q) || (p.articulo?.toLowerCase() === q));
+                } else {
+                    r = r.filter(p => 
+                        (p.codigo?.toLowerCase().includes(q)) || (p.titulo?.toLowerCase().includes(q)) || 
+                        (p.articulo?.toLowerCase().includes(q)) || (p.color?.toLowerCase().includes(q)) ||
+                        (p.ubicacion?.toLowerCase().includes(q))
+                    );
+                }
+            }
+            if (state.location) {
+                const loc = state.location.toLowerCase();
+                r = r.filter(p => p.ubicacion?.toLowerCase().includes(loc));
+            }
+            return r;
+        }
+        
+        // Mostrar/ocultar botón de galería según si hay búsqueda activa
+        function updateGalleryButton() {
+            const hasSearch = state.search.length > 0;
+            const preResults = hasSearch ? getPreFilteredResults() : [];
+            const hasMultipleColors = hasSearch && new Set(preResults.map(p => p.color).filter(Boolean)).size > 1;
+            $('colorGalleryBtn').style.display = hasMultipleColors ? 'inline-block' : 'none';
+        }
+        
+        // === MULTI-SELECT TOGGLE ===
+        function toggleMultiSelect() {
+            state.multiSelect = !state.multiSelect;
+            $('multiToggle').classList.toggle('active', state.multiSelect);
+            if (!state.multiSelect) {
+                if (state.colors.length > 1) state.colors = [state.colors[state.colors.length - 1]];
+                applyFilters();
+            }
+        }
+        
+        function clearAllFilters() {
+            state.colors = [];
+            state.sizes = [];
+            state.multiSelect = false;
+            $('multiToggle').classList.remove('active');
+            applyFilters();
+        }
+        
+        function updateClearFiltersBtn() {
+            const hasFilters = state.colors.length > 0 || state.sizes.length > 0;
+            $('clearFiltersBtn').classList.toggle('show', hasFilters);
+        }
         
         function toggleFilters() { $('filtersCollapse').classList.toggle('open'); }
         
@@ -637,7 +981,8 @@
         
         function clearSearch() {
             $('searchInput').value = '';
-            state.search = ''; state.searchExact = false; state.color = ''; state.size = '';
+            state.search = ''; state.searchExact = false; state.colors = []; state.sizes = [];
+            state.multiSelect = false; $('multiToggle').classList.remove('active');
             $('searchClear').classList.remove('show');
             $('autocomplete').classList.remove('show');
             applyFilters();
@@ -672,18 +1017,18 @@
             }
             
             updateDynamicFilters(r);
-            if (state.color) r = r.filter(p => p.color === state.color);
-            if (state.size) r = r.filter(p => p.talle === state.size);
+            if (state.colors.length > 0) r = r.filter(p => state.colors.includes(p.color));
+            if (state.sizes.length > 0) r = r.filter(p => state.sizes.includes(p.talle));
             
             r = sortProducts(r);
             state.filtered = r; state.page = 1;
-            render(); updateActiveFilterTags();
+            render(); updateActiveFilterTags(); updateClearFiltersBtn(); updateGalleryButton();
         }
         
         function updateActiveFilterTags() {
             let tags = '';
-            if (state.color) tags += '<span class="active-filter-tag">' + state.color + '</span>';
-            if (state.size) tags += '<span class="active-filter-tag">Talle ' + state.size + '</span>';
+            state.colors.forEach(c => { tags += '<span class="active-filter-tag">' + c + '</span>'; });
+            state.sizes.forEach(s => { tags += '<span class="active-filter-tag">T:' + s + '</span>'; });
             $('activeFilters').innerHTML = tags;
         }
         
@@ -699,11 +1044,37 @@
                 return a.localeCompare(b);
             });
             
-            $('colorOptions').innerHTML = '<div class="filter-opt' + (!state.color ? ' active' : '') + '" data-color="">Todos</div>' +
-                colors.map(c => '<div class="filter-opt' + (state.color === c ? ' active' : '') + '" data-color="' + c + '">' + c + '</div>').join('');
+            // Stock total por color (sobre todos los results)
+            const colorStock = {};
+            results.forEach(p => { if (p.color) { colorStock[p.color] = (colorStock[p.color] || 0) + (p.stock || 0); } });
             
-            $('sizeOptions').innerHTML = '<div class="filter-opt' + (!state.size ? ' active' : '') + '" data-size="">Todos</div>' +
-                sizes.map(s => '<div class="filter-opt' + (state.size === s ? ' active' : '') + '" data-size="' + s + '">' + s + '</div>').join('');
+            // Stock total por talle — FILTRADO por colores seleccionados
+            const sizeResults = state.colors.length > 0 
+                ? results.filter(p => state.colors.includes(p.color)) 
+                : results;
+            const sizeStock = {};
+            sizeResults.forEach(p => { if (p.talle) { sizeStock[p.talle] = (sizeStock[p.talle] || 0) + (p.stock || 0); } });
+            
+            // Stock total por color — FILTRADO por talles seleccionados
+            const colorResults = state.sizes.length > 0
+                ? results.filter(p => state.sizes.includes(p.talle))
+                : results;
+            const colorStockFiltered = {};
+            colorResults.forEach(p => { if (p.color) { colorStockFiltered[p.color] = (colorStockFiltered[p.color] || 0) + (p.stock || 0); } });
+            
+            $('colorOptions').innerHTML = '<div class="filter-opt' + (state.colors.length === 0 ? ' active' : '') + '" data-color="">Todos</div>' +
+                colors.map(c => {
+                    const noStock = (colorStockFiltered[c] || 0) <= 0;
+                    const active = state.colors.includes(c);
+                    return '<div class="filter-opt' + (active ? ' active' : '') + (noStock ? ' no-stock-color' : '') + '" data-color="' + c + '">' + c + '</div>';
+                }).join('');
+            
+            $('sizeOptions').innerHTML = '<div class="filter-opt' + (state.sizes.length === 0 ? ' active' : '') + '" data-size="">Todos</div>' +
+                sizes.map(s => {
+                    const noStock = (sizeStock[s] || 0) <= 0;
+                    const active = state.sizes.includes(s);
+                    return '<div class="filter-opt' + (active ? ' active' : '') + (noStock ? ' no-stock-color' : '') + '" data-size="' + s + '">' + s + '</div>';
+                }).join('');
         }
         
         // EXACTAMENTE LA MISMA FUNCIÓN DEL ARCHIVO QUE FUNCIONA
@@ -751,7 +1122,7 @@
                 const isModified = !!mod;
                 const currentStock = isModified ? mod.newStock : p.stock;
                 const stockClass = currentStock > 5 ? 'high' : currentStock > 0 ? 'med' : 'low';
-                const noStock = currentStock === 0;
+                const noStock = currentStock <= 0;
                 
                 let stockDisplay = '<div class="stock-num ' + stockClass + '">' + currentStock + '</div>';
                 
@@ -762,7 +1133,13 @@
                     stockDisplay += '<div class="stock-label">actual</div>';
                 }
                 
+                const imgUrl = getProductImage(p.codigo, p);
+                const thumbHtml = imgUrl 
+                    ? '<img class="product-thumb" loading="lazy" src="' + imgUrl + '" onclick="showImgModal(\'' + p.codigo + '\',' + p.id + ')" onerror="this.outerHTML=\'<div class=product-thumb-placeholder>📦</div>\'">'
+                    : '<div class="product-thumb-placeholder">📦</div>';
+                
                 html += '<div class="product-item' + (isModified ? ' modified' : '') + (noStock ? ' no-stock' : '') + '" id="item-' + p.id + '">' +
+                    thumbHtml +
                     '<div class="product-info">' +
                     '<div class="product-meta">' + (p.color || '-') + ' • Talle ' + (p.talle || '-') + '</div>' +
                     '<div class="product-sku">SKU: ' + p.codigo + ' | Ubic: ' + (p.ubicacion || '-') + '</div>' +
@@ -790,6 +1167,7 @@
             });
             
             $('productList').innerHTML = html;
+            if (state.showImages) $('productList').classList.add('show-images');
             
             if (totalPages > 1) {
                 let h = '<button class="page-btn" onclick="goPage(' + (state.page - 1) + ')"' + (state.page === 1 ? ' disabled' : '') + '>‹</button>';
@@ -880,21 +1258,23 @@
             let mod = state.modifications[id];
             
             if (!mod) {
-                // Primera modificación
-                mod = {
-                    oldStock: product.stock,
-                    newStock: product.stock + delta,
-                    product: product
-                };
+                let newStock;
+                if (product.stock < 0 && delta > 0) {
+                    newStock = delta; // Negativo + sumar = resetear a delta
+                } else {
+                    newStock = product.stock + delta;
+                }
+                mod = { oldStock: product.stock, newStock: newStock, product: product };
             } else {
-                // Modificación existente
-                mod.newStock += delta;
+                if (mod.newStock < 0 && delta > 0) {
+                    mod.newStock = delta;
+                } else {
+                    mod.newStock += delta;
+                }
             }
             
-            // Validar que no sea negativo
             if (mod.newStock < 0) mod.newStock = 0;
             
-            // Si volvió al valor original, eliminar la modificación
             if (mod.newStock === mod.oldStock) {
                 delete state.modifications[id];
             } else {
@@ -903,7 +1283,8 @@
             
             saveModifications();
             render();
-            toast(delta > 0 ? '+' + delta : delta.toString());
+            const realChange = (state.modifications[id] ? state.modifications[id].newStock : product.stock) - product.stock;
+            toast(realChange > 0 ? '+' + realChange : realChange.toString());
         }
         
         function setStockZero(id, e) {
@@ -952,7 +1333,6 @@
                 product: product
             };
             
-            // Si el valor es igual al original, eliminar la modificación
             if (value === product.stock) {
                 delete state.modifications[id];
             }
@@ -1016,6 +1396,7 @@
             }
             
             delete state.modifications[productId];
+            saveModifications();
             render();
             
             // Actualizar modal si está abierto
@@ -1224,6 +1605,7 @@
         async function loadData() {
             $('syncDot').classList.add('loading');
             $('syncDot').classList.remove('error');
+            document.querySelector('.sync-bar').classList.remove('error');
             $('syncStatus').textContent = 'Sincronizando...';
             $('loadingText').textContent = 'Cargando inventario...';
             $('loadingError').style.display = 'none';
@@ -1238,6 +1620,13 @@
                 
                 if (data.success && data.products && data.products.length > 0) {
                     PRODUCTS = data.products;
+                    
+                    // Cargar imágenes si esta API las trae
+                    if (data.images) {
+                        IMAGES_MAP = data.images;
+                        localStorage.setItem('mikra_images', JSON.stringify(IMAGES_MAP));
+                    }
+                    
                     localStorage.setItem('mikra_products', JSON.stringify(PRODUCTS));
                     localStorage.setItem('mikra_lastSync', new Date().toISOString());
                     
@@ -1255,11 +1644,13 @@
                 clearTimeout(timeout);
                 $('syncDot').classList.remove('loading');
                 $('syncDot').classList.add('error');
+                document.querySelector('.sync-bar').classList.add('error');
                 $('syncStatus').textContent = 'Error';
                 
                 const cached = localStorage.getItem('mikra_products');
                 if (cached) {
                     PRODUCTS = JSON.parse(cached);
+                    loadImagesFromCache();
                     updateUniqueArticles();
                     applyFilters();
                     $('loadingScreen').classList.add('hidden');
@@ -1274,7 +1665,7 @@
         
         // Event Listeners
         $('searchInput').addEventListener('input', e => {
-            state.search = e.target.value.trim(); state.searchExact = false; state.color = ''; state.size = '';
+            state.search = e.target.value.trim(); state.searchExact = false; state.colors = []; state.sizes = [];
             $('searchClear').classList.toggle('show', state.search.length > 0);
             showAutocomplete(state.search); applyFilters();
         });
@@ -1299,19 +1690,40 @@
             });
         });
         
+        // Colores: single por defecto, multi con toggle
         $('colorOptions').addEventListener('click', e => {
             const opt = e.target.closest('[data-color]'); if (!opt) return;
-            state.color = opt.dataset.color; applyFilters();
+            const color = opt.dataset.color;
+            if (color === '') {
+                state.colors = [];
+            } else if (state.multiSelect) {
+                const idx = state.colors.indexOf(color);
+                if (idx > -1) state.colors.splice(idx, 1);
+                else state.colors.push(color);
+            } else {
+                state.colors = state.colors.length === 1 && state.colors[0] === color ? [] : [color];
+            }
+            applyFilters();
         });
         
+        // Talles: siempre single select
         $('sizeOptions').addEventListener('click', e => {
             const opt = e.target.closest('[data-size]'); if (!opt) return;
-            state.size = opt.dataset.size; applyFilters();
+            const size = opt.dataset.size;
+            if (size === '') {
+                state.sizes = [];
+            } else {
+                state.sizes = state.sizes.length === 1 && state.sizes[0] === size ? [] : [size];
+            }
+            applyFilters();
         });
         
         // Inicializar
         loadModifications();
+        loadImagesFromCache();
         loadData();
+        // Cargar imágenes en background desde la API del inventario
+        loadImagesFromAPI();
     </script>
     <script>
     if ('serviceWorker' in navigator) {
