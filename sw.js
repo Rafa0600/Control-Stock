@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mikra-stock-v8';
+const CACHE_NAME = 'mikra-stock-v9';
 
 const PRECACHE_URLS = [
   './',
@@ -27,6 +27,7 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
+  // Google Apps Script API — network first, offline fallback
   if (url.hostname.includes('script.google.com') || url.hostname.includes('script.googleusercontent.com')) {
     event.respondWith(
       fetch(event.request).catch(() =>
@@ -38,6 +39,7 @@ self.addEventListener('fetch', event => {
     return;
   }
 
+  // MercadoLibre images — cache first
   if (url.hostname.includes('mlstatic.com')) {
     event.respondWith(
       caches.match(event.request).then(cached => {
@@ -54,6 +56,7 @@ self.addEventListener('fetch', event => {
     return;
   }
 
+  // Everything else — stale-while-revalidate
   event.respondWith(
     caches.match(event.request).then(cached => {
       const fetchPromise = fetch(event.request).then(response => {
