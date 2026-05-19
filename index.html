@@ -2963,7 +2963,7 @@
             $('syncStatus').textContent = 'Sincronizando...';
             
             const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 15000);
+            const timeout = setTimeout(() => controller.abort(), 25000);
             
             try {
                 const response = await fetch(API_URL, { signal: controller.signal });
