@@ -622,6 +622,14 @@
             background: #7c3aed; color: white;
         }
         .action-btn.ecomm:hover:not(:disabled) { background: #6d28d9; }
+
+        .action-btn.adjust {
+            background: #f59e0b; color: #1a2744;
+        }
+        .action-btn.adjust:hover:not(:disabled) { background: #d97706; }
+        .action-btn.adjust.has-adjustment { background: #fbbf24; box-shadow: 0 0 0 2px rgba(251,191,36,0.4); }
+        [data-theme="light"] .action-btn.adjust { background: #fcd34d; color: #78350f; }
+        [data-theme="light"] .action-btn.adjust.has-adjustment { background: #fde68a; }
         
         /* MODAL */
         .modal-overlay {
@@ -1083,6 +1091,7 @@
             <div class="edit-val" id="articleEditVal">0</div>
             <button class="stock-btn plus" onclick="articleModify(1)">+</button>
             <button class="stock-btn zero" onclick="articleSetZero()">⊘</button>
+            <button class="stock-btn igual" id="articleIgualBtn" onclick="articleSetIgual()" title="Confirmar stock actual para Ecomm">=</button>
             <input type="number" class="stock-manual-input" id="articleManualInput" placeholder="#" min="0">
             <button class="stock-set-btn" onclick="articleSetManual()">✓</button>
         </div>
@@ -1105,8 +1114,11 @@
             <button class="action-btn clear" onclick="clearModifications()" id="clearBtn" disabled>
                 🗑️ Limpiar
             </button>
+            <button class="action-btn adjust" onclick="abrirAjustarVentas()" id="adjustBtn" disabled>
+                📋 Ajustar
+            </button>
             <button class="action-btn ecomm" onclick="pedirPinEcomm()" id="ecommBtn" disabled>
-                📦 → Ecomm
+                📦 Ecomm
             </button>
         </div>
       </div>
@@ -1873,13 +1885,17 @@
             if (mod.newStock === mod.oldStock) {
                 delete state.modifications[sku];
             } else {
+                // Si había un ajuste aplicado, lo invalidamos — el usuario cambió la base
+                delete mod.stockAntesDeAjuste;
+                delete mod.ajustePreCorte;
+                delete mod.ajusteCorteHora;
                 state.modifications[sku] = mod;
             }
-            
+
             haptic('light');
             saveModifications();
             updateSingleProduct(id); // #5 targeted update instead of full render
-            
+
             const realChange = (state.modifications[sku] ? state.modifications[sku].newStock : product.stock) - product.stock;
             toastWithUndo((realChange > 0 ? '+' : '') + realChange + ' ' + (product.color || ''));
         }
@@ -2426,15 +2442,19 @@
             if (!articleSelectedId) { $('articleEditBar').classList.remove('show'); return; }
             const product = PRODUCTS.find(p => p.id === articleSelectedId);
             if (!product) return;
-            
+
             const mod = state.modifications[product.codigo];
             const currentStock = mod ? mod.newStock : product.stock;
-            
+            const esIgual = mod && mod.tipo === 'igual';
+
             $('articleEditLabel').textContent = '🎨 ' + (product.color || '-') + '  ·  Talle ' + (product.talle || '-');
             $('articleEditVal').textContent = currentStock;
             const stockClass = currentStock > 5 ? 'high' : currentStock > 0 ? 'med' : 'low';
             $('articleEditVal').className = 'edit-val ' + stockClass;
             $('articleManualInput').value = '';
+            // Reflejar estado activo del botón "="
+            const igualBtn = $('articleIgualBtn');
+            if (igualBtn) igualBtn.classList.toggle('active', esIgual);
             $('articleEditBar').classList.add('show');
         }
         
@@ -2477,9 +2497,16 @@
                 mod.newStock = Math.max(0, (mod.newStock < 0 && delta > 0) ? delta : mod.newStock + delta);
             }
             
-            if (mod.newStock === mod.oldStock) delete state.modifications[sku];
-            else state.modifications[sku] = mod;
-            
+            if (mod.newStock === mod.oldStock) {
+                delete state.modifications[sku];
+            } else {
+                // Si había un ajuste aplicado, lo invalidamos — el usuario cambió la base
+                delete mod.stockAntesDeAjuste;
+                delete mod.ajustePreCorte;
+                delete mod.ajusteCorteHora;
+                state.modifications[sku] = mod;
+            }
+
             haptic('light');
             saveModifications();
             articleRefreshCell(product);
@@ -2508,6 +2535,32 @@
             toast('✓ → 0  ' + (product.color || '') + ' T:' + (product.talle || ''));
         }
         
+        function articleSetIgual() {
+            if (!articleSelectedId) return;
+            const product = PRODUCTS.find(p => p.id === articleSelectedId);
+            if (!product) return;
+            const sku = product.codigo;
+            const mod = state.modifications[sku];
+
+            // Toggle off si ya está en modo "igual"
+            if (mod && mod.tipo === 'igual') {
+                undoStack.push({ sku, previousMod: { ...mod }, productName: (product.color || '-') + ' T:' + (product.talle || '-') });
+                delete state.modifications[sku];
+                haptic('light'); saveModifications(); articleRefreshCell(product); updateModificationCount();
+                toast('↩️ Confirmación Ecomm quitada');
+                return;
+            }
+            // Bloquear si ya tiene un cambio real
+            if (mod && mod.tipo !== 'igual') {
+                toast('⚠️ Ya tiene un cambio de stock. Enviá a Ecomm desde ahí.', 'warning');
+                return;
+            }
+            undoStack.push({ sku, previousMod: mod ? { ...mod } : null, productName: (product.color || '-') + ' T:' + (product.talle || '-') });
+            state.modifications[sku] = { oldStock: product.stock, newStock: product.stock, product, tipo: 'igual' };
+            haptic('medium'); saveModifications(); articleRefreshCell(product); updateModificationCount();
+            toast('✓ Stock confirmado — se verificará en Ecomm', 'success');
+        }
+
         function articleSetManual() {
             if (!articleSelectedId) return;
             const product = PRODUCTS.find(p => p.id === articleSelectedId);
@@ -2532,13 +2585,19 @@
         function updateModificationCount() {
             const count = Object.keys(state.modifications).length;
             $('modCount').textContent = count;
-            
+
             const hasModifications = count > 0;
             $('viewBtn').disabled = !hasModifications;
             $('copyBtn').disabled = !hasModifications;
             $('clearBtn').disabled = !hasModifications;
             $('ecommBtn').disabled = !hasModifications;
-            
+            $('adjustBtn').disabled = !hasModifications;
+
+            // Glow the adjust button when there are already-applied adjustments
+            const hayAjusteAplicado = hasModifications && Object.values(state.modifications).some(m => m.ajustePreCorte > 0);
+            $('adjustBtn').classList.toggle('has-adjustment', hayAjusteAplicado);
+            $('adjustBtn').textContent = hayAjusteAplicado ? '📋 Ajustado' : '📋 Ajustar';
+
             // #7 Show/hide modified filter chip
             $('modifiedChip').style.display = hasModifications ? '' : 'none';
             $('modChipCount').textContent = count;
@@ -2546,54 +2605,140 @@
         
         function viewModifications() {
             const mods = Object.values(state.modifications);
-            if (!mods.length) {
-                toast('No hay modificaciones', 'warning');
-                return;
-            }
-            
+            if (!mods.length) { toast('No hay modificaciones', 'warning'); return; }
+            $('modalTitle').textContent = 'Modificaciones (' + mods.length + ')';
+            $('modalBody').innerHTML = _renderModList(mods);
+            showModal();
+        }
+
+        function _renderModList(mods) {
             let html = '';
             mods.forEach(mod => {
                 const p = mod.product;
+                const sku = p.codigo;
+                const skuId = sku.replace(/[^a-z0-9]/gi, '_');
+                const skuEsc = sku.replace(/'/g, "\\'");
+                const esIgual = mod.tipo === 'igual';
                 const change = mod.newStock - mod.oldStock;
-                html += '<div class="mod-item">' +
-                    '<div style="display: flex; justify-content: space-between; align-items: start;">' +
-                    '<div style="flex: 1;">' +
-                    '<div class="mod-item-header">' + (p.titulo || p.articulo || '-') + '</div>' +
-                    '<div class="mod-item-detail">SKU: ' + p.codigo + '</div>' +
-                    '<div class="mod-item-detail">' + (p.color || '-') + ' • Talle ' + (p.talle || '-') + '</div>' +
-                    '<div class="mod-item-change">' +
-                    '<span class="mod-old">' + mod.oldStock + '</span>' +
-                    '<span>→</span>' +
-                    '<span class="mod-new">' + mod.newStock + '</span>' +
-                    '<span style="color: var(--text-secondary); margin-left: 8px;">(' + (change >= 0 ? '+' : '') + change + ')</span>' +
-                    '</div></div>' +
-                    '<button onclick="removeModification(\'' + p.codigo.replace(/'/g, "\\'") + '\')" style="background: var(--danger); border: none; color: white; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85em; font-weight: 600; margin-left: 12px; min-width:44px; min-height:44px; touch-action:manipulation;">🗑️</button>' +
-                    '</div></div>';
+                const changeStr = (change >= 0 ? '+' : '') + change;
+                const changeCol = change > 0 ? 'var(--success)' : change < 0 ? 'var(--danger)' : 'var(--text-secondary)';
+
+                let ajusteNota = '';
+                if (mod.ajustePreCorte > 0) {
+                    const hora = mod.ajusteCorteHora ? mod.ajusteCorteHora.split('T')[1] : null;
+                    const conteo = mod.stockAntesDeAjuste ?? mod.newStock;
+                    ajusteNota = `<div style="font-size:0.72em;color:var(--warning);margin-top:3px;">📋 Conteo: ${conteo} → −${mod.ajustePreCorte} sin imprimir${hora ? ' (' + hora + ')' : ''}</div>`;
+                }
+
+                if (esIgual) {
+                    html += `<div class="mod-item">
+                        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+                            <div style="flex:1;min-width:0;">
+                                <div class="mod-item-header" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.titulo || p.articulo || '-'}</div>
+                                <div class="mod-item-detail">SKU: ${sku} · ${p.color || '-'} · T.${p.talle || '-'}</div>
+                                <div style="font-size:0.78em;color:var(--primary);margin-top:2px;">= Ecomm ✓ (stock sin cambio)</div>
+                            </div>
+                            <button onclick="removeModification('${skuEsc}', true)"
+                                style="background:var(--danger);border:none;color:white;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:0.85em;min-width:40px;min-height:40px;touch-action:manipulation;flex-shrink:0;">🗑️</button>
+                        </div>
+                    </div>`;
+                } else {
+                    html += `<div class="mod-item">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+                            <div style="flex:1;min-width:0;">
+                                <div class="mod-item-header" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.titulo || p.articulo || '-'}</div>
+                                <div class="mod-item-detail">SKU: ${sku} · ${p.color || '-'} · T.${p.talle || '-'}</div>
+                                <div class="mod-item-change" style="margin-top:4px;">
+                                    <span class="mod-old">${mod.oldStock}</span>
+                                    <span>→</span>
+                                    <span class="mod-new">${mod.newStock}</span>
+                                    <span style="color:${changeCol};margin-left:6px;font-weight:700;">(${changeStr})</span>
+                                </div>
+                                ${ajusteNota}
+                            </div>
+                            <button onclick="removeModification('${skuEsc}', true)"
+                                style="background:var(--danger);border:none;color:white;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:0.85em;min-width:40px;min-height:40px;touch-action:manipulation;flex-shrink:0;">🗑️</button>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:5px;margin-top:9px;flex-wrap:wrap;">
+                            <button onclick="listModifyStock('${skuEsc}', -1)"
+                                style="width:38px;height:38px;background:rgba(248,113,113,0.15);border:1px solid var(--danger);color:var(--danger);border-radius:7px;font-weight:900;font-size:1.15em;cursor:pointer;touch-action:manipulation;">−</button>
+                            <button onclick="listModifyStock('${skuEsc}', +1)"
+                                style="width:38px;height:38px;background:rgba(74,222,128,0.15);border:1px solid var(--success);color:var(--success);border-radius:7px;font-weight:900;font-size:1.15em;cursor:pointer;touch-action:manipulation;">+</button>
+                            <input type="number" id="listinp_${skuId}" placeholder="Nuevo valor" min="0"
+                                style="width:96px;padding:7px 8px;background:var(--bg-input);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:0.9em;outline:none;"
+                                onkeydown="if(event.key==='Enter') listSetManual('${skuEsc}')">
+                            <button onclick="listSetManual('${skuEsc}')"
+                                style="padding:7px 13px;background:var(--primary);border:none;color:white;border-radius:7px;font-weight:700;cursor:pointer;font-size:0.88em;touch-action:manipulation;">✓</button>
+                        </div>
+                    </div>`;
+                }
             });
-            
-            $('modalTitle').textContent = 'Modificaciones (' + mods.length + ')';
-            $('modalBody').innerHTML = html;
-            showModal();
+            return html;
         }
-        
-        function removeModification(sku) {
+
+        function listModifyStock(sku, delta) {
+            const mod = state.modifications[sku];
+            if (!mod) return;
+            const newVal = Math.max(0, mod.newStock + delta);
+            if (newVal === mod.oldStock) {
+                delete state.modifications[sku];
+            } else {
+                const updated = { ...mod, newStock: newVal };
+                delete updated.stockAntesDeAjuste;
+                delete updated.ajustePreCorte;
+                delete updated.ajusteCorteHora;
+                state.modifications[sku] = updated;
+            }
+            haptic('light');
+            saveModifications();
+            updateSingleProduct(mod.product.id);
+            updateModificationCount();
+            const mods = Object.values(state.modifications);
+            if (!mods.length) { closeModal(); toast('Lista vacía', 'warning'); return; }
+            $('modalTitle').textContent = 'Modificaciones (' + mods.length + ')';
+            $('modalBody').innerHTML = _renderModList(mods);
+        }
+
+        function listSetManual(sku) {
+            const skuId = sku.replace(/[^a-z0-9]/gi, '_');
+            const inp = document.getElementById('listinp_' + skuId);
+            if (!inp) return;
+            const value = parseInt(inp.value);
+            if (isNaN(value) || value < 0) { toast('⚠️ Ingresá una cantidad válida', 'warning'); inp.focus(); return; }
+            const mod = state.modifications[sku];
+            if (!mod) return;
+            if (value === mod.oldStock) {
+                delete state.modifications[sku];
+            } else {
+                state.modifications[sku] = { oldStock: mod.oldStock, newStock: value, product: mod.product };
+            }
+            haptic('medium');
+            saveModifications();
+            updateSingleProduct(mod.product.id);
+            updateModificationCount();
+            const mods = Object.values(state.modifications);
+            if (!mods.length) { closeModal(); toast('Lista vacía', 'warning'); return; }
+            $('modalTitle').textContent = 'Modificaciones (' + mods.length + ')';
+            $('modalBody').innerHTML = _renderModList(mods);
+            toast('✓ ' + value + ' · ' + (mod.product.color || '') + ' T:' + (mod.product.talle || ''), 'success');
+        }
+
+        function removeModification(sku, noConfirm) {
             const mod = state.modifications[sku];
             const productName = mod ? (mod.product.color || '-') + ' T:' + (mod.product.talle || '-') : sku;
-            
-            if (!confirm('¿Eliminar modificación de ' + productName + '?')) {
-                return;
-            }
-            
+            if (!noConfirm && !confirm('¿Eliminar modificación de ' + productName + '?')) return;
+
             delete state.modifications[sku];
             saveModifications();
-            render();
-            
-            // Actualizar modal si está abierto
+            if (mod?.product?.id) updateSingleProduct(mod.product.id);
+            updateModificationCount();
+
             const modalOpen = $('modalOverlay').classList.contains('show');
             if (modalOpen) {
-                const remainingMods = Object.values(state.modifications).length;
-                if (remainingMods > 0) {
-                    viewModifications();
+                const mods = Object.values(state.modifications);
+                if (mods.length > 0) {
+                    $('modalTitle').textContent = 'Modificaciones (' + mods.length + ')';
+                    $('modalBody').innerHTML = _renderModList(mods);
                 } else {
                     closeModal();
                     toast('Lista vacía', 'warning');
@@ -2633,6 +2778,21 @@
                     const change = mod.newStock - mod.oldStock;
                     const arrow = change > 0 ? '⬆️' : change < 0 ? '⬇️' : '➡️';
                     text += '   ' + arrow + ' SKU: ' + p.codigo + '  ' + (p.color || '-') + ' • T:' + (p.talle || '-') + '   ' + mod.oldStock + ' → *' + mod.newStock + '* (' + (change >= 0 ? '+' : '') + change + ')\n';
+                    // Mostrar detalle de ajuste por ventas sin imprimir — explícito cuando cambia el resultado
+                    if (mod.ajustePreCorte > 0) {
+                        const hora = mod.ajusteCorteHora ? mod.ajusteCorteHora.split('T')[1] : null;
+                        const horaStr = hora ? ' (' + hora + ')' : '';
+                        const conteo = mod.stockAntesDeAjuste ?? mod.newStock;
+                        const conteoChange = conteo - mod.oldStock;
+                        const conteoSign = conteoChange >= 0 ? '+' : '';
+                        if (change === 0) {
+                            // Neto cero — explicar bien que había un conteo y se descontó
+                            text += '      📋 Tu conteo: ' + conteo + ' (' + conteoSign + conteoChange + ') − ' + mod.ajustePreCorte + ' sin imprimir' + horaStr + ' = sin cambio neto\n';
+                        } else {
+                            // Hay cambio real — solo anotar el descuento
+                            text += '      📋 Tu conteo: ' + conteo + ' (' + conteoSign + conteoChange + ') − ' + mod.ajustePreCorte + ' sin imprimir' + horaStr + '\n';
+                        }
+                    }
                 });
             });
             
@@ -2757,8 +2917,11 @@
                 '<option value="200"' + (state.pageSize===200?' selected':'') + '>200</option>' +
                 '</select></td></tr>' +
                 '<tr><td style="padding:10px 0;font-size:0.85em;">🏷️ Mostrar SKU/Ubic.</td><td style="text-align:right;padding:10px 0;"><label class="toggle"><input type="checkbox" id="setShowSku" ' + (state.showSku ? 'checked' : '') + ' onchange="state.showSku=this.checked"><span class="toggle-slider"></span></label></td></tr>' +
-                '<tr><td style="padding:10px 0;font-size:0.85em;">🕒 Corte de ventas (Ecomm)</td><td style="text-align:right;padding:10px 0;"><input type="datetime-local" class="setting-number" id="setEcommCutoff" value="' + (state.ecommCutoff || '') + '" style="width:160px;font-size:0.8em;padding:4px 6px;"></td></tr>' +
-                '<tr><td style="padding:4px 0;font-size:0.72em;color:var(--text-secondary);" colspan="2">Hora de corte: las ventas sin imprimir anteriores a este valor se cuentan como pendientes al enviar a Ecomm.</td></tr>' +
+                '<tr><td colspan="2" style="padding:10px 0 4px;">' +
+                    '<div style="font-size:0.85em;margin-bottom:8px;">🕒 Corte de ventas (Ecomm)</div>' +
+                    _renderSettingsCutoff() +
+                    '<div style="font-size:0.72em;color:var(--text-secondary);margin-top:6px;">Hora de corte: las ventas sin imprimir anteriores a este valor se cuentan como pendientes al enviar a Ecomm.</div>' +
+                '</td></tr>' +
                 '<tr><td style="padding:10px 0;font-size:0.85em;">🔄 Auto-sync</td><td style="text-align:right;padding:10px 0;"><select class="setting-select" id="setAutoSync">' +
                 '<option value="0"' + (state.autoSyncMin===0?' selected':'') + '>Off</option>' +
                 '<option value="5"' + (state.autoSyncMin===5?' selected':'') + '>5 min</option>' +
@@ -2813,7 +2976,7 @@
             state.lowStockThreshold = lowStock;
             state.pageSize = parseInt($('setPageSize').value);
             state.autoSyncMin = parseInt($('setAutoSync').value);
-            state.ecommCutoff = $('setEcommCutoff')?.value || '';
+            _syncSettingsCutoff(); // lee date+time separados y actualiza state.ecommCutoff
             
             // Persist
             try {
@@ -3273,6 +3436,17 @@
         <div id="debugVSIOut" style="max-height:340px;overflow-y:auto;font-size:0.72em;font-family:monospace;color:#94a3b8;background:#0f1e38;border-radius:7px;padding:8px;min-height:60px;white-space:pre-wrap;word-break:break-all;"></div>
     </div>
 
+    <!-- MODAL AJUSTAR VENTAS (WhatsApp/Excel — solo pre-corte) -->
+    <div class="modal-overlay" id="ajustarVentasOverlay" style="z-index:2000;">
+        <div class="modal" onclick="event.stopPropagation()" style="max-width:480px;width:95%;">
+            <div class="modal-header">
+                <div class="modal-title">📋 Ajustar ventas sin imprimir</div>
+                <button class="modal-close" onclick="cerrarAjustarVentas()">×</button>
+            </div>
+            <div class="modal-body" id="ajustarVentasBody" style="max-height:70vh;overflow-y:auto;"></div>
+        </div>
+    </div>
+
     <!-- MODAL VERIFICACIÓN VENTAS SIN IMPRIMIR -->
     <div class="modal-overlay" id="ventasSiOverlay" style="z-index:2000;">
         <div class="modal" onclick="event.stopPropagation()" style="max-width:480px;width:95%;">
@@ -3296,11 +3470,27 @@
         const ML_TOKEN_TTL_ECOMM = 55 * 60 * 1000;
         let _mlTokEcomm = {}, _mlVentaEcomm = new Map();
         let _vsiResultados = [];
+        let _avResultados = [];
+        let _avProgress = { loaded: 0, total: 0 };
+
+        // Fetch con timeout automático via AbortController
+        async function _fetchWithTimeout(url, options = {}, ms = 12000) {
+            const ctrl = new AbortController();
+            const tid = setTimeout(() => ctrl.abort(), ms);
+            try {
+                const res = await fetch(url, { ...options, signal: ctrl.signal });
+                clearTimeout(tid);
+                return res;
+            } catch(e) {
+                clearTimeout(tid);
+                throw e;
+            }
+        }
 
         async function getMLTokEcomm(proxy) {
             const c = _mlTokEcomm[proxy];
             if (c && Date.now() < c.expiresAt) return c;
-            const data = await fetch(`${proxy}/get-token`).then(r => r.json());
+            const data = await _fetchWithTimeout(`${proxy}/get-token`, {}, 10000).then(r => r.json());
             const info = { token: data.access_token, expiresAt: Date.now() + ML_TOKEN_TTL_ECOMM };
             _mlTokEcomm[proxy] = info;
             return info;
@@ -3324,9 +3514,9 @@
             for (const [, proxy] of Object.entries(ML_PROXIES_ECOMM)) {
                 try {
                     const { token } = await getMLTokEcomm(proxy);
-                    const r = await fetch(`${proxy}/api/orders/${orderId}`, {
+                    const r = await _fetchWithTimeout(`${proxy}/api/orders/${orderId}`, {
                         headers: { Authorization: `Bearer ${token}` }
-                    });
+                    }, 10000);
                     if (!r.ok) continue;
                     const order = await r.json();
                     if (!order.id) continue;
@@ -3338,9 +3528,9 @@
                     if (sid) {
                         try {
                             const { token: tok2 } = await getMLTokEcomm(proxy);
-                            const rs = await fetch(`${proxy}/api/shipments/${sid}`, {
+                            const rs = await _fetchWithTimeout(`${proxy}/api/shipments/${sid}`, {
                                 headers: { Authorization: `Bearer ${tok2}` }
-                            });
+                            }, 10000);
                             if (rs.ok) {
                                 const ship = await rs.json();
                                 if (ship.substatus) substatus = ship.substatus;
@@ -3367,6 +3557,151 @@
         let _lastEcommAdjustments = null;
         let _pendingModUpdate = null;
 
+        // ═══════════════════════════════════════════════════════════════
+        // PICKER DE HORARIO DE CORTE — reemplaza datetime-local incómodo
+        // ═══════════════════════════════════════════════════════════════
+        function _renderCutoffPicker(prefix, currentVal) {
+            const now = new Date();
+            const pad = n => String(n).padStart(2, '0');
+            const todayStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+            const yest = new Date(now); yest.setDate(yest.getDate() - 1);
+            const yesterdayStr = `${yest.getFullYear()}-${pad(yest.getMonth()+1)}-${pad(yest.getDate())}`;
+
+            let date = todayStr;
+            let time = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+            if (currentVal && currentVal.includes('T')) {
+                [date, time] = currentVal.split('T');
+                if (time && time.length > 5) time = time.slice(0, 5);
+            }
+
+            const isToday = date === todayStr;
+            const isYest  = date === yesterdayStr;
+
+            const dayBtn = (label, active, offset) =>
+                `<button onclick="_setCutoffDay('${prefix}',${offset})"
+                    style="padding:7px 14px;border-radius:8px;font-weight:700;font-size:0.82em;cursor:pointer;touch-action:manipulation;
+                           border:1px solid ${active ? 'var(--primary)' : 'var(--border)'};
+                           background:${active ? 'var(--primary)' : 'var(--bg-input)'};
+                           color:${active ? 'white' : 'var(--text)'};">${label}</button>`;
+
+            return `
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap;">
+                    ${dayBtn('Hoy', isToday, 0)}
+                    ${dayBtn('Ayer', isYest, -1)}
+                    ${!isToday && !isYest ? `<span style="font-size:0.75em;color:var(--warning);padding:6px 8px;border:1px solid var(--warning);border-radius:7px;">${date}</span>` : ''}
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <span style="font-size:0.8em;color:var(--text-secondary);white-space:nowrap;">🕒 Hora de corte:</span>
+                    <input type="time" id="${prefix}CutoffTime" value="${time}"
+                        style="padding:9px 10px;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:1em;outline:none;min-width:100px;"
+                        onchange="_cutoffPickerChange('${prefix}','${date}')">
+                    <button onclick="_setCutoffNow('${prefix}')"
+                        style="padding:7px 11px;background:var(--bg-input);border:1px solid var(--border);border-radius:7px;color:var(--text-secondary);font-size:0.78em;cursor:pointer;touch-action:manipulation;white-space:nowrap;">
+                        ⏱ Ahora
+                    </button>
+                </div>
+                <input type="hidden" id="${prefix}CutoffDate" value="${date}">`;
+        }
+
+        function _cutoffPickerChange(prefix, dateFallback) {
+            const dateEl = document.getElementById(prefix + 'CutoffDate');
+            const timeEl = document.getElementById(prefix + 'CutoffTime');
+            const date = (dateEl ? dateEl.value : null) || dateFallback || '';
+            const time = timeEl ? timeEl.value : '00:00';
+            if (!date || !time) return;
+            const val = date + 'T' + time;
+            if (prefix === 'av') onAVCutoffChange(val);
+            else if (prefix === 'vsi') onVSICutoffChange(val);
+        }
+
+        function _setCutoffDay(prefix, offset) {
+            const d = new Date();
+            d.setDate(d.getDate() + offset);
+            const pad = n => String(n).padStart(2, '0');
+            const dateStr = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+            const dateEl = document.getElementById(prefix + 'CutoffDate');
+            if (dateEl) dateEl.value = dateStr;
+            _cutoffPickerChange(prefix, dateStr);
+        }
+
+        function _renderSettingsCutoff() {
+            const now = new Date();
+            const pad = n => String(n).padStart(2, '0');
+            const todayStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+            const yest = new Date(now); yest.setDate(yest.getDate() - 1);
+            const yesterdayStr = `${yest.getFullYear()}-${pad(yest.getMonth()+1)}-${pad(yest.getDate())}`;
+
+            let date = todayStr, time = '00:00';
+            if (state.ecommCutoff && state.ecommCutoff.includes('T')) {
+                [date, time] = state.ecommCutoff.split('T');
+                if (time && time.length > 5) time = time.slice(0, 5);
+            }
+            const isToday = date === todayStr;
+            const isYest  = date === yesterdayStr;
+            const dayBtn = (label, active, offset) =>
+                `<button type="button" onclick="_setSettingsCutoffDay(${offset})"
+                    style="padding:6px 12px;border-radius:7px;font-weight:700;font-size:0.8em;cursor:pointer;touch-action:manipulation;
+                           border:1px solid ${active ? 'var(--primary)' : 'var(--border)'};
+                           background:${active ? 'var(--primary)' : 'var(--bg-input)'};
+                           color:${active ? 'white' : 'var(--text)'};">${label}</button>`;
+            return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:7px;flex-wrap:wrap;">
+                        ${dayBtn('Hoy', isToday, 0)} ${dayBtn('Ayer', isYest, -1)}
+                        ${!isToday && !isYest ? `<span style="font-size:0.75em;color:var(--warning);">${date}</span>` : ''}
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                        <span style="font-size:0.78em;color:var(--text-secondary);">🕒</span>
+                        <input type="time" id="setEcommCutoffTime" value="${time}"
+                            style="padding:7px 10px;background:var(--bg-input);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:0.9em;outline:none;"
+                            onchange="_syncSettingsCutoff()">
+                        <button type="button" onclick="_setSettingsCutoffNow()"
+                            style="padding:6px 10px;background:var(--bg-input);border:1px solid var(--border);border-radius:7px;color:var(--text-secondary);font-size:0.75em;cursor:pointer;touch-action:manipulation;">⏱ Ahora</button>
+                    </div>
+                    <input type="hidden" id="setEcommCutoffDate" value="${date}">`;
+        }
+
+        function _setSettingsCutoffDay(offset) {
+            const d = new Date(); d.setDate(d.getDate() + offset);
+            const pad = n => String(n).padStart(2, '0');
+            const dateStr = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+            const el = document.getElementById('setEcommCutoffDate');
+            if (el) el.value = dateStr;
+            _syncSettingsCutoff();
+            // Re-render just the cutoff section label
+            openSettings(); // easiest: re-open settings (fast, no data fetch)
+        }
+
+        function _setSettingsCutoffNow() {
+            const now = new Date();
+            const pad = n => String(n).padStart(2, '0');
+            const dateStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+            const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+            const dEl = document.getElementById('setEcommCutoffDate');
+            const tEl = document.getElementById('setEcommCutoffTime');
+            if (dEl) dEl.value = dateStr;
+            if (tEl) tEl.value = timeStr;
+            _syncSettingsCutoff();
+        }
+
+        function _syncSettingsCutoff() {
+            const dEl = document.getElementById('setEcommCutoffDate');
+            const tEl = document.getElementById('setEcommCutoffTime');
+            if (!dEl || !tEl) return;
+            const val = dEl.value + 'T' + tEl.value;
+            state.ecommCutoff = val;
+        }
+
+        function _setCutoffNow(prefix) {
+            const now = new Date();
+            const pad = n => String(n).padStart(2, '0');
+            const dateStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+            const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+            const dateEl = document.getElementById(prefix + 'CutoffDate');
+            const timeEl = document.getElementById(prefix + 'CutoffTime');
+            if (dateEl) dateEl.value = dateStr;
+            if (timeEl) timeEl.value = timeStr;
+            _cutoffPickerChange(prefix, dateStr);
+        }
+
         function onVSICutoffChange(val) {
             state.ecommCutoff = val;
             try {
@@ -3384,6 +3719,327 @@
             _vsiProgress = { loaded: 0, total: Object.keys(state.modifications).length };
             renderVSIModal('loading', cutoff);
             verificarVentasSinImprimir(cutoff);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // AJUSTAR VENTAS — flujo WhatsApp/Excel (solo ventas pre-corte)
+        // ═══════════════════════════════════════════════════════════════
+
+        function abrirAjustarVentas() {
+            const mods = Object.values(state.modifications).filter(m => m.tipo !== 'igual');
+            if (!mods.length) { toast('No hay modificaciones para ajustar', 'warning'); return; }
+
+            _avResultados = [];
+            _mlVentaEcomm = new Map(); // Reset cache ML
+
+            const now = new Date();
+            const pad = n => String(n).padStart(2,'0');
+            const arStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+            const defaultCutoff = state.ecommCutoff || arStr;
+
+            _avProgress = { loaded: 0, total: mods.length };
+            renderAVModal('loading', defaultCutoff);
+            $('ajustarVentasOverlay').classList.add('show');
+            consultarVentasPreCorte(defaultCutoff);
+        }
+
+        function cerrarAjustarVentas() {
+            $('ajustarVentasOverlay').classList.remove('show');
+        }
+
+        function onAVCutoffChange(val) {
+            state.ecommCutoff = val;
+            try { localStorage.setItem('mikra_ecomm_cutoff', val); } catch(e) {}
+            const mods = Object.values(state.modifications).filter(m => m.tipo !== 'igual');
+            _avProgress = { loaded: 0, total: mods.length };
+            _mlVentaEcomm = new Map();
+            renderAVModal('loading', val);
+            consultarVentasPreCorte(val);
+        }
+
+        function _updateAVProgress() {
+            const p = _avProgress;
+            const pct = p.total > 0 ? Math.round(p.loaded / p.total * 100) : 5;
+            const bar = document.getElementById('avProgressBar');
+            const txt = document.getElementById('avProgressTxt');
+            if (bar) bar.style.width = pct + '%';
+            if (txt) txt.textContent = p.total > 0 ? `${p.loaded} / ${p.total}` : '';
+        }
+
+        function renderAVModal(estado, cutoff) {
+            const isLoading = estado === 'loading';
+            const p = _avProgress;
+            const pct = p.total > 0 ? Math.round(p.loaded / p.total * 100) : 5;
+            const hayAjusteAplicado = Object.values(state.modifications).some(m => m.ajustePreCorte > 0);
+
+            let html = `
+                <div style="margin-bottom:14px;padding:10px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:9px;">
+                    <div style="font-size:0.72em;color:var(--text-secondary);margin-bottom:8px;">Ventas sin imprimir <em>antes</em> de este horario:</div>
+                    ${isLoading ? `<div style="font-size:0.82em;color:var(--text-secondary);">⏳ Cargando...</div>` : _renderCutoffPicker('av', cutoff)}
+                </div>`;
+
+            if (isLoading) {
+                html += `
+                    <div style="margin-bottom:10px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.75em;color:var(--text-secondary);margin-bottom:4px;">
+                            <span>⏳ Consultando ventas ML...</span>
+                            <span id="avProgressTxt">${p.total > 0 ? `${p.loaded} / ${p.total}` : ''}</span>
+                        </div>
+                        <div style="background:rgba(255,255,255,0.08);border-radius:4px;height:5px;overflow:hidden;">
+                            <div id="avProgressBar" style="height:100%;width:${pct}%;background:var(--warning);border-radius:4px;transition:width 0.25s;"></div>
+                        </div>
+                    </div>`;
+            } else if (estado === 'ready') {
+                html += renderAVResultados(cutoff);
+            } else {
+                html += `<div style="text-align:center;padding:16px;color:var(--danger);">⚠️ Error al consultar. Intentá de nuevo.</div>`;
+            }
+
+            html += `<div style="display:flex;gap:8px;margin-top:14px;">`;
+            if (hayAjusteAplicado && !isLoading) {
+                html += `<button onclick="resetearAjusteVentas()"
+                    style="flex:1;padding:10px;background:rgba(239,68,68,0.12);color:var(--danger);border:1px solid var(--danger);border-radius:8px;font-weight:700;cursor:pointer;font-size:0.9em;">
+                    ↩ Resetear
+                </button>`;
+            } else {
+                html += `<button onclick="cerrarAjustarVentas()"
+                    style="flex:1;padding:10px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:8px;font-weight:700;cursor:pointer;font-size:0.9em;">
+                    Cancelar
+                </button>`;
+            }
+            html += `<button onclick="confirmarAjusteVentas()" id="avConfirmarBtn"
+                style="flex:1;padding:10px;background:var(--warning);color:#1a2744;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.9em;"
+                ${isLoading ? 'disabled' : ''}>
+                ✓ Aplicar ajuste
+            </button></div>`;
+
+            $('ajustarVentasBody').innerHTML = html;
+        }
+
+        function renderAVResultados(cutoff) {
+            if (!_avResultados.length) return `<div style="text-align:center;padding:16px;color:var(--success);">✅ Sin ventas pendientes antes del corte</div>`;
+
+            const hayPendientes = _avResultados.some(r => r.pendingUnits > 0);
+            const hayErrores = _avResultados.some(r => r.error);
+            let html = '';
+
+            if (hayErrores) {
+                html += `<div style="font-size:0.78em;color:var(--danger);margin-bottom:10px;padding:8px 10px;background:rgba(239,68,68,0.1);border:1px solid var(--danger);border-radius:6px;">
+                    ⚠️ <strong>Algunos artículos no se pudieron verificar</strong> — revisar manualmente si tuvieron ventas antes del corte.
+                </div>`;
+            }
+            if (hayPendientes) {
+                html += `<div style="font-size:0.78em;color:var(--warning);margin-bottom:10px;padding:8px;background:rgba(251,191,36,0.08);border-radius:6px;">⚠️ Hay ventas sin imprimir antes del corte. Se descontarán de las modificaciones para WhatsApp/Excel.</div>`;
+            } else if (!hayErrores) {
+                html += `<div style="font-size:0.82em;color:var(--success);margin-bottom:10px;padding:8px;background:rgba(74,222,128,0.08);border-radius:6px;">✅ No hay ventas pendientes antes del corte</div>`;
+            }
+
+            _avResultados.forEach((r, i) => {
+                const p = r.mod.product;
+                const nombre = (p.titulo || p.articulo || '') + (p.color ? ` · ${p.color}` : '') + (p.talle ? ` T.${p.talle}` : '');
+
+                // ── Item con error de consulta ──────────────────────────
+                if (r.error) {
+                    const esTimeout = r.timedOut;
+                    html += `
+                        <div style="background:rgba(239,68,68,0.1);border:2px solid var(--danger);border-radius:8px;padding:10px 12px;margin-bottom:8px;">
+                            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+                                <div style="min-width:0;">
+                                    <div style="font-size:0.85em;font-weight:700;color:var(--danger);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">⚠️ ${nombre}</div>
+                                    <div style="font-size:0.72em;color:var(--text-secondary);margin-top:2px;">SKU ${p.codigo} · ${esTimeout ? 'Sin respuesta del worker (timeout)' : 'Error: ' + r.error}</div>
+                                    <div style="font-size:0.78em;color:var(--danger);font-weight:700;margin-top:5px;">
+                                        ⚠️ REVISAR MANUALMENTE — no se sabe si hay ventas sin imprimir antes del corte
+                                    </div>
+                                </div>
+                                <div style="flex-shrink:0;background:var(--danger);color:white;border-radius:6px;padding:4px 8px;font-size:0.7em;font-weight:700;white-space:nowrap;">NO VERIFICADO</div>
+                            </div>
+                        </div>`;
+                    return;
+                }
+
+                // Usar stock original del usuario (antes de cualquier ajuste anterior)
+                const baseStock = r.mod.stockAntesDeAjuste ?? r.mod.newStock;
+                const delta = baseStock - r.mod.oldStock;
+                const signo = delta >= 0 ? `+${delta}` : String(delta);
+                const yaAjustado = (r.mod.ajustePreCorte || 0) > 0;
+                const pendBg = r.pendingUnits > 0 ? 'rgba(251,191,36,0.08)' : 'rgba(255,255,255,0.03)';
+                const borderCol = r.pendingUnits > 0 ? 'var(--warning)' : 'var(--border)';
+
+                html += `
+                    <div style="background:${pendBg};border:1px solid ${borderCol};border-radius:8px;padding:10px 12px;margin-bottom:8px;">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+                            <div style="min-width:0;">
+                                <div style="font-size:0.82em;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${nombre}</div>
+                                <div style="font-size:0.72em;color:var(--text-secondary);margin-top:1px;">
+                                    SKU ${p.codigo} · Tu conteo: <span style="color:var(--primary);">${r.mod.oldStock} → ${baseStock} (${signo})</span>
+                                    ${yaAjustado ? `<span style="color:var(--warning);"> · Ajuste anterior: −${r.mod.ajustePreCorte}</span>` : ''}
+                                </div>
+                            </div>
+                            ${r.pendingUnits > 0 ? `<div style="flex-shrink:0;font-size:0.78em;color:var(--warning);font-weight:700;white-space:nowrap;">📋 ${r.pendingUnits} ud${r.pendingUnits!==1?'s':''}</div>` : ''}
+                        </div>
+                        ${r.pendingUnits > 0 ? `
+                            <div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                                <div style="font-size:0.78em;color:var(--text-secondary);">Ajuste:</div>
+                                <div style="display:flex;align-items:center;gap:4px;">
+                                    <button onclick="cambiarAjusteAV(${i},-1)" style="width:28px;height:28px;border:1px solid var(--border);background:var(--bg-input);color:var(--text);border-radius:6px;font-weight:900;cursor:pointer;font-size:1em;">−</button>
+                                    <input type="number" id="avAdj_${i}" value="${r.adjust}" min="0"
+                                        style="width:52px;text-align:center;padding:4px;background:var(--bg-input);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.9em;"
+                                        onchange="ajusteAVManual(${i},this.value)">
+                                    <button onclick="cambiarAjusteAV(${i},+1)" style="width:28px;height:28px;border:1px solid var(--border);background:var(--bg-input);color:var(--text);border-radius:6px;font-weight:900;cursor:pointer;font-size:1em;">+</button>
+                                </div>
+                                <div style="font-size:0.75em;color:var(--text-secondary);" id="avPreview_${i}">→ ${Math.max(0, baseStock - r.adjust)} para WhatsApp</div>
+                            </div>
+                        ` : `<div style="font-size:0.75em;color:var(--success);margin-top:4px;">✅ Sin pendientes antes del corte</div>`}
+                    </div>`;
+            });
+
+            return html;
+        }
+
+        function cambiarAjusteAV(idx, delta) {
+            const r = _avResultados[idx];
+            r.adjust = Math.max(0, (r.adjust || 0) + delta);
+            const inp = document.getElementById(`avAdj_${idx}`);
+            if (inp) inp.value = r.adjust;
+            const baseStock = r.mod.stockAntesDeAjuste ?? r.mod.newStock;
+            const prev = document.getElementById(`avPreview_${idx}`);
+            if (prev) prev.textContent = `→ ${Math.max(0, baseStock - r.adjust)} para WhatsApp`;
+        }
+
+        function ajusteAVManual(idx, val) {
+            const r = _avResultados[idx];
+            r.adjust = Math.max(0, parseInt(val) || 0);
+            const baseStock = r.mod.stockAntesDeAjuste ?? r.mod.newStock;
+            const prev = document.getElementById(`avPreview_${idx}`);
+            if (prev) prev.textContent = `→ ${Math.max(0, baseStock - r.adjust)} para WhatsApp`;
+        }
+
+        function confirmarAjusteVentas() {
+            const cutoff = $('avCutoffInput')?.value || state.ecommCutoff || '';
+            let applied = 0;
+
+            _avResultados.forEach(r => {
+                if (r.adjust === 0) return;
+                const sku = r.sku;
+                const mod = state.modifications[sku];
+                if (!mod) return;
+
+                // Siempre usar el stock original del usuario como base
+                // Esto previene el doble descuento si se presiona "Ajustar" más de una vez
+                const baseStock = mod.stockAntesDeAjuste ?? mod.newStock;
+                const adjustedNew = Math.max(0, baseStock - r.adjust);
+
+                state.modifications[sku] = {
+                    ...mod,
+                    newStock: adjustedNew,
+                    stockAntesDeAjuste: baseStock,   // preservar el valor original
+                    ajustePreCorte: r.adjust,         // cuánto se descontó
+                    ajusteCorteHora: cutoff           // a qué hora fue el corte
+                };
+                applied++;
+            });
+
+            if (applied > 0) {
+                saveModifications();
+                updateModificationCount();
+                applyFilters();
+                haptic('medium');
+                toast(`✓ Ajuste aplicado a ${applied} artículo${applied !== 1 ? 's' : ''} — WhatsApp actualizado`, 'success');
+            } else {
+                toast('Sin ventas pendientes para ajustar', 'warning');
+            }
+            cerrarAjustarVentas();
+        }
+
+        function resetearAjusteVentas() {
+            const mods = Object.values(state.modifications);
+            let restored = 0;
+            mods.forEach(mod => {
+                if (mod.stockAntesDeAjuste != null) {
+                    const sku = mod.product.codigo;
+                    const { stockAntesDeAjuste, ajustePreCorte, ajusteCorteHora, ...rest } = mod;
+                    state.modifications[sku] = { ...rest, newStock: stockAntesDeAjuste };
+                    restored++;
+                }
+            });
+            if (restored > 0) {
+                saveModifications();
+                updateModificationCount();
+                applyFilters();
+                haptic('light');
+                toast(`↩️ Ajuste reseteado en ${restored} artículo${restored !== 1 ? 's' : ''}`, 'success');
+            }
+            cerrarAjustarVentas();
+        }
+
+        async function consultarVentasPreCorte(cutoff) {
+            const mods = Object.values(state.modifications).filter(m => m.tipo !== 'igual');
+            if (!mods.length) { cerrarAjustarVentas(); return; }
+
+            const cutoffDate = cutoff ? new Date(cutoff + ':00Z') : null;
+            _avProgress = { loaded: 0, total: mods.length };
+            _updateAVProgress();
+
+            try {
+                // Pre-calentar tokens una sola vez
+                await Promise.all(Object.values(ML_PROXIES_ECOMM).map(p => getMLTokEcomm(p).catch(() => {})));
+
+                _avResultados = await Promise.all(mods.map(async mod => {
+                    const sku = mod.product.codigo;
+                    const result = { sku, mod, pendingUnits: 0, adjust: 0 };
+                    try {
+                        let d;
+                        try {
+                            const resp = await _fetchWithTimeout(`${WORKER_MOV_ECOMM}/movimientos?sku=${encodeURIComponent(sku)}&dias=1`, {}, 12000);
+                            d = await resp.json();
+                        } catch(fetchErr) {
+                            result.timedOut = fetchErr.name === 'AbortError';
+                            result.error = result.timedOut ? 'timeout' : (fetchErr.message || 'error');
+                            _avProgress.loaded++; _updateAVProgress(); return result;
+                        }
+                        if (!d.ok) { _avProgress.loaded++; _updateAVProgress(); return result; }
+
+                        const movs = d.movimientos || [];
+                        const ventasML = movs.filter(m => {
+                            const tipo = String(m.tipo_movimiento ?? m.Origen ?? '').toLowerCase();
+                            const esVentaML = tipo.includes('ventas_meli') || tipo.includes('mercado libre');
+                            const esCombo = String(m.es_combo ?? m.Es_combo ?? '').toLowerCase() === 'si';
+                            if (!esVentaML && !esCombo) return false;
+                            const nro = m.nro_comprobante ?? m.Nro_comprobante_operacion;
+                            if (!nro) return false;
+                            // Solo pre-corte
+                            if (cutoffDate) {
+                                const dt = parseFechaMovimiento(m.fecha ?? m.Fecha);
+                                if (dt && dt >= cutoffDate) return false;
+                            }
+                            return true;
+                        });
+
+                        if (ventasML.length) {
+                            let totalUnits = 0;
+                            for (const m of ventasML) {
+                                const nro = String(m.nro_comprobante ?? m.Nro_comprobante_operacion ?? '');
+                                try {
+                                    const info = await resolverVentaEcomm(nro);
+                                    if (!info || info.notFound) continue;
+                                    if (esImpresoEcomm(info.substatus) !== false) continue;
+                                } catch { continue; }
+                                totalUnits += _contarUnidadesMovimiento(m);
+                            }
+                            result.pendingUnits = totalUnits;
+                            result.adjust = totalUnits;
+                        }
+                    } catch {}
+                    _avProgress.loaded++;
+                    _updateAVProgress();
+                    return result;
+                }));
+
+                const currentCutoff = $('avCutoffInput')?.value || cutoff;
+                renderAVModal('ready', currentCutoff);
+            } catch(e) {
+                renderAVModal('error', cutoff);
+            }
         }
 
         function abrirVerificacionVentas() {
@@ -3420,13 +4076,11 @@
 
             let html = `
                 <div style="margin-bottom:12px;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
                         <div style="font-size:0.78em;color:var(--text-secondary);">🕒 Registré el stock hasta:</div>
                         ${!isLoading ? `<button onclick="reVerificar()" style="padding:3px 9px;background:var(--bg-input);border:1px solid var(--border);border-radius:6px;color:var(--text-secondary);font-size:0.72em;cursor:pointer;flex-shrink:0;">🔄 Refrescar</button>` : ''}
                     </div>
-                    <input type="datetime-local" id="vsiCutoffInput" value="${cutoff || ''}" ${isLoading ? 'disabled' : ''}
-                        style="width:100%;padding:10px;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.9em;outline:none;box-sizing:border-box;"
-                        onchange="onVSICutoffChange(this.value)">
+                    ${isLoading ? `<div style="font-size:0.82em;color:var(--text-secondary);">⏳ Cargando...</div>` : _renderCutoffPicker('vsi', cutoff)}
                 </div>
             `;
 
@@ -3468,35 +4122,75 @@
         function renderVSIResultados() {
             if (!_vsiResultados.length) return `<div style="text-align:center;padding:16px;color:var(--success);">✅ Sin ventas pendientes</div>`;
 
-            const hayPendientes = _vsiResultados.some(r => r.pendingUnits > 0);
+            const hayExtra  = _vsiResultados.some(r => r.adjust > 0);
+            const hayErrores = _vsiResultados.some(r => r.error);
             let html = '';
 
-            if (hayPendientes) {
-                html += `<div style="font-size:0.78em;color:var(--warning);margin-bottom:10px;padding:8px;background:rgba(251,191,36,0.08);border-radius:6px;">⚠️ Hay ventas sin imprimir antes del corte. El ajuste descuenta esas unidades del stock que vas a enviar a Ecomm.</div>`;
-            } else {
-                html += `<div style="font-size:0.82em;color:var(--success);margin-bottom:10px;padding:8px;background:rgba(74,222,128,0.08);border-radius:6px;">✅ Sin ventas pendientes antes del corte</div>`;
+            if (hayErrores) {
+                html += `<div style="font-size:0.78em;color:var(--danger);margin-bottom:10px;padding:8px 10px;background:rgba(239,68,68,0.1);border:1px solid var(--danger);border-radius:6px;">
+                    ⚠️ <strong>Algunos artículos no se pudieron verificar</strong> — revisar manualmente si hubo ventas sin imprimir.
+                </div>`;
+            }
+            if (hayExtra) {
+                html += `<div style="font-size:0.78em;color:var(--warning);margin-bottom:10px;padding:8px;background:rgba(251,191,36,0.08);border-radius:6px;">⚠️ Hay ventas sin imprimir. El ajuste descuenta unidades adicionales en Ecomm.</div>`;
+            } else if (!hayErrores) {
+                html += `<div style="font-size:0.82em;color:var(--success);margin-bottom:10px;padding:8px;background:rgba(74,222,128,0.08);border-radius:6px;">✅ Sin ventas pendientes adicionales para Ecomm</div>`;
             }
 
             _vsiResultados.forEach((r, i) => {
                 const p = r.mod.product;
                 const nombre = (p.titulo || p.articulo || '') + (p.color ? ` · ${p.color}` : '') + (p.talle ? ` T.${p.talle}` : '');
+
+                // ── Item con error de consulta ──────────────────────────
+                if (r.error) {
+                    html += `
+                        <div style="background:rgba(239,68,68,0.1);border:2px solid var(--danger);border-radius:8px;padding:10px 12px;margin-bottom:8px;">
+                            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+                                <div style="min-width:0;">
+                                    <div style="font-size:0.85em;font-weight:700;color:var(--danger);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">⚠️ ${nombre}</div>
+                                    <div style="font-size:0.72em;color:var(--text-secondary);margin-top:2px;">SKU ${p.codigo} · ${r.timedOut ? 'Sin respuesta del worker (timeout)' : 'Error: ' + r.error}</div>
+                                    <div style="font-size:0.78em;color:var(--danger);font-weight:700;margin-top:5px;">
+                                        ⚠️ REVISAR MANUALMENTE — no se pudo verificar si hay ventas sin imprimir
+                                    </div>
+                                </div>
+                                <div style="flex-shrink:0;background:var(--danger);color:white;border-radius:6px;padding:4px 8px;font-size:0.7em;font-weight:700;white-space:nowrap;">NO VERIFICADO</div>
+                            </div>
+                        </div>`;
+                    return;
+                }
+
                 const delta = r.mod.newStock - r.mod.oldStock;
                 const signo = delta >= 0 ? `+${delta}` : String(delta);
-                const pendBg = r.pendingUnits > 0 ? 'rgba(251,191,36,0.08)' : 'rgba(255,255,255,0.03)';
-                const borderCol = r.pendingUnits > 0 ? 'var(--warning)' : 'var(--border)';
+                const preAplicado = (r.mod.ajustePreCorte || 0) > 0;
+                const hayExtra = r.adjust > 0;
+                const pendBg = hayExtra ? 'rgba(251,191,36,0.08)' : 'rgba(255,255,255,0.03)';
+                const borderCol = hayExtra ? 'var(--warning)' : 'var(--border)';
+
+                // Construir descripción de pendientes
+                let pendDesc = '';
+                if (preAplicado && r.preCorteUnits > 0) {
+                    pendDesc += `<span style="color:var(--success);font-size:0.9em;">✓ Pre-corte: ${r.preCorteUnits} ud ya ajustada${r.preCorteUnits!==1?'s':''}</span>`;
+                } else if (r.preCorteUnits > 0) {
+                    pendDesc += `<span style="color:var(--warning);">Pre-corte: ${r.preCorteUnits} ud</span>`;
+                }
+                if (r.postCorteUnits > 0) {
+                    if (pendDesc) pendDesc += ' · ';
+                    pendDesc += `<span style="color:var(--warning);">Post-corte: ${r.postCorteUnits} ud</span>`;
+                }
 
                 html += `
                     <div style="background:${pendBg};border:1px solid ${borderCol};border-radius:8px;padding:10px 12px;margin-bottom:8px;">
                         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
                             <div style="min-width:0;">
                                 <div style="font-size:0.82em;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${nombre}</div>
-                                <div style="font-size:0.72em;color:var(--text-secondary);margin-top:1px;">SKU ${p.codigo} · Cambio: <span style="color:var(--primary);">${signo} → ${r.mod.newStock}</span></div>
+                                <div style="font-size:0.72em;color:var(--text-secondary);margin-top:1px;">SKU ${p.codigo} · Ecomm: <span style="color:var(--primary);">${signo} → ${r.mod.newStock}</span></div>
+                                ${pendDesc ? `<div style="font-size:0.72em;margin-top:3px;">${pendDesc}</div>` : ''}
                             </div>
-                            ${r.pendingUnits > 0 ? `<div style="flex-shrink:0;font-size:0.78em;color:var(--warning);font-weight:700;white-space:nowrap;">📋 ${r.pendingUnits} ud${r.pendingUnits!==1?'s':''} sin imprimir</div>` : ''}
+                            ${r.adjust > 0 ? `<div style="flex-shrink:0;font-size:0.78em;color:var(--warning);font-weight:700;white-space:nowrap;">+${r.adjust} extra</div>` : ''}
                         </div>
-                        ${r.pendingUnits > 0 ? `
+                        ${r.adjust > 0 ? `
                             <div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                                <div style="font-size:0.78em;color:var(--text-secondary);">Ajuste:</div>
+                                <div style="font-size:0.78em;color:var(--text-secondary);">Extra Ecomm:</div>
                                 <div style="display:flex;align-items:center;gap:4px;">
                                     <button onclick="cambiarAjusteVSI(${i},-1)" style="width:28px;height:28px;border:1px solid var(--border);background:var(--bg-input);color:var(--text);border-radius:6px;font-weight:900;cursor:pointer;font-size:1em;">−</button>
                                     <input type="number" id="vsiAdj_${i}" value="${r.adjust}" min="0"
@@ -3506,7 +4200,7 @@
                                 </div>
                                 <div style="font-size:0.75em;color:var(--text-secondary);" id="vsiPreview_${i}">→ ${Math.max(0, r.mod.newStock - r.adjust)} en Ecomm</div>
                             </div>
-                        ` : `<div style="font-size:0.75em;color:var(--success);margin-top:4px;">✅ Sin pendientes antes del corte</div>`}
+                        ` : `<div style="font-size:0.75em;color:var(--success);margin-top:4px;">✅ Sin pendientes adicionales para Ecomm</div>`}
                     </div>
                 `;
             });
@@ -3564,50 +4258,71 @@
                 // Pre-calentar tokens UNA SOLA VEZ para ambas cuentas antes de empezar
                 await Promise.all(Object.values(ML_PROXIES_ECOMM).map(p => getMLTokEcomm(p).catch(() => {})));
 
-                // Procesar cada SKU en paralelo (un fetch de movimientos por SKU)
                 _vsiResultados = await Promise.all(mods.map(async mod => {
                     const sku = mod.product.codigo;
-                    const result = { sku, mod, pendingUnits: 0, adjust: 0 };
+                    // preCorteYaAplicado: si el usuario ya corrió "Ajustar ventas",
+                    // el pre-corte está incluido en mod.newStock → solo sumamos post-corte para Ecomm
+                    const preCorteYaAplicado = (mod.ajustePreCorte || 0);
+                    const result = { sku, mod, pendingUnits: 0, preCorteUnits: 0, postCorteUnits: 0, adjust: 0 };
                     try {
-                        // Solo el día de hoy para minimizar llamadas a la API
-                        const d = await fetch(`${WORKER_MOV_ECOMM}/movimientos?sku=${encodeURIComponent(sku)}&dias=1`).then(r => r.json());
+                        let d;
+                        try {
+                            const resp = await _fetchWithTimeout(`${WORKER_MOV_ECOMM}/movimientos?sku=${encodeURIComponent(sku)}&dias=1`, {}, 12000);
+                            d = await resp.json();
+                        } catch(fetchErr) {
+                            result.timedOut = fetchErr.name === 'AbortError';
+                            result.error = result.timedOut ? 'timeout' : (fetchErr.message || 'error');
+                            _vsiProgress.loaded++; _updateVSIProgress(); return result;
+                        }
                         if (!d.ok) { _vsiProgress.loaded++; _updateVSIProgress(); return result; }
 
                         const movs = d.movimientos || [];
 
-                        const ventasML = movs.filter(m => {
+                        // Separar ventas ML en pre-corte y post-corte
+                        const ventasPreCorte = [];
+                        const ventasPostCorte = [];
+                        movs.forEach(m => {
                             const tipo = String(m.tipo_movimiento ?? m.Origen ?? '').toLowerCase();
-                            // Incluir ventas ML normales Y ventas de packs/combos (es_combo='Si')
                             const esVentaML = tipo.includes('ventas_meli') || tipo.includes('mercado libre');
                             const esCombo = String(m.es_combo ?? m.Es_combo ?? '').toLowerCase() === 'si';
-                            if (!esVentaML && !esCombo) return false;
+                            if (!esVentaML && !esCombo) return;
                             const nro = m.nro_comprobante ?? m.Nro_comprobante_operacion;
-                            if (!nro) return false;
+                            if (!nro) return;
                             if (cutoffDate) {
                                 const dt = parseFechaMovimiento(m.fecha ?? m.Fecha);
-                                if (dt && dt >= cutoffDate) return false;
+                                if (dt && dt >= cutoffDate) { ventasPostCorte.push(m); } else { ventasPreCorte.push(m); }
+                            } else {
+                                ventasPreCorte.push(m);
                             }
-                            return true;
                         });
 
-                        if (ventasML.length) {
-                            // Procesar ventas SECUENCIALMENTE para evitar ráfagas de llamadas al proxy
-                            let totalUnits = 0;
-                            for (const m of ventasML) {
+                        // Contar unidades sin imprimir en cada grupo (secuencial para no saturar proxy)
+                        const contarUnidades = async (ventas) => {
+                            let total = 0;
+                            for (const m of ventas) {
                                 const nro = String(m.nro_comprobante ?? m.Nro_comprobante_operacion ?? '');
                                 try {
                                     const info = await resolverVentaEcomm(nro);
                                     if (!info || info.notFound) continue;
                                     if (esImpresoEcomm(info.substatus) !== false) continue;
                                 } catch { continue; }
-                                // Usar Unidades_movidas del movimiento — ya tiene el valor correcto:
-                                // SKU individual (ej 115351): Unidades_movidas=3 para un pack de 3
-                                // SKU pack (ej 115432): Unidades_movidas=1 (1 pack vendido)
-                                totalUnits += _contarUnidadesMovimiento(m);
+                                total += _contarUnidadesMovimiento(m);
                             }
-                            result.pendingUnits = totalUnits;
-                            result.adjust = totalUnits;
-                        }
+                            return total;
+                        };
+
+                        result.preCorteUnits = await contarUnidades(ventasPreCorte);
+                        result.postCorteUnits = await contarUnidades(ventasPostCorte);
+
+                        // Para Ecomm: si pre-corte ya fue aplicado via "Ajustar ventas",
+                        // no lo sumamos de nuevo — solo sumamos el post-corte adicional
+                        const ecommExtra = preCorteYaAplicado > 0
+                            ? result.postCorteUnits
+                            : result.preCorteUnits + result.postCorteUnits;
+
+                        result.pendingUnits = result.preCorteUnits + result.postCorteUnits;
+                        result.adjust = ecommExtra;
+
                     } catch {}
                     _vsiProgress.loaded++;
                     _updateVSIProgress();
@@ -3654,7 +4369,13 @@
             let movs = [];
             try {
                 log(`📡 GET /movimientos?sku=${sku}&dias=1`);
-                const d = await fetch(`${WORKER_MOV_ECOMM}/movimientos?sku=${encodeURIComponent(sku)}&dias=1`).then(r => r.json());
+                let d;
+                try {
+                    const resp = await _fetchWithTimeout(`${WORKER_MOV_ECOMM}/movimientos?sku=${encodeURIComponent(sku)}&dias=1`, {}, 12000);
+                    d = await resp.json();
+                } catch(fe) {
+                    log(`❌ ${fe.name === 'AbortError' ? 'TIMEOUT (>12s) — worker sin respuesta' : 'fetch error: ' + fe.message}`); return;
+                }
                 log(`→ ok:${d.ok}  total:${(d.movimientos||[]).length}`);
                 if (!d.ok) { log('❌ Error:', d.error); return; }
                 movs = d.movimientos || [];
