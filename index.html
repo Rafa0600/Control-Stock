@@ -126,11 +126,25 @@
         }
         .autocomplete-item:hover { background: var(--bg-input); }
         .autocomplete-name { font-weight: 600; }
-        .autocomplete-stock { 
+        .autocomplete-stock {
             font-size: 0.8em; color: var(--success);
             background: rgba(74, 222, 128, 0.2); padding: 2px 8px; border-radius: 10px;
         }
-        
+        .autocomplete-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 16px; font-size: 0.72em; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.5px; color: var(--text-secondary); background: var(--bg-input);
+            border-bottom: 1px solid var(--border);
+        }
+        .autocomplete-clear-recent { cursor: pointer; color: var(--primary); font-weight: 600; }
+        .autocomplete-clear-recent:hover { text-decoration: underline; }
+        .autocomplete-item.recent .autocomplete-name { font-weight: 500; color: var(--text); }
+        .autocomplete-remove {
+            color: var(--text-secondary); font-size: 0.9em; padding: 4px 8px; margin: -4px -8px -4px 0;
+            border-radius: 6px; cursor: pointer; -webkit-tap-highlight-color: transparent;
+        }
+        .autocomplete-remove:hover { color: var(--danger); background: var(--bg-input); }
+
         .filter-row { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
         @media (max-width: 640px) {
             .filter-row { 
@@ -563,14 +577,7 @@
         .toast.success { background: var(--success); color: #1a2744; }
         .toast.warning { background: var(--warning); color: #1a2744; }
         .toast.error { background: var(--danger); color: white; }
-        .undo-btn {
-            background: rgba(255,255,255,0.25); border: 1px solid rgba(255,255,255,0.4);
-            color: inherit; padding: 4px 10px; border-radius: 6px; font-size: 0.85em;
-            font-weight: 700; cursor: pointer; margin-left: 10px; vertical-align: middle;
-            -webkit-tap-highlight-color: transparent; touch-action: manipulation;
-        }
-        .undo-btn:active { background: rgba(255,255,255,0.4); }
-        
+
         /* BARRA INFERIOR */
         .bottom-bar {
             position: fixed; bottom: 0; left: 0; right: 0;
@@ -683,28 +690,29 @@
         [data-theme="light"] .modal-body::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); }
         [data-theme="light"] .modal-body::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.35); }
         
-        .mod-item {
-            background: var(--bg-input); padding: 12px; border-radius: 8px;
-            margin-bottom: 8px; border-left: 3px solid var(--purple);
+        .mod-article-group { margin-bottom: 6px; }
+        .mod-article-header {
+            display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+            padding: 9px 6px; margin-bottom: 2px; border-bottom: 2px solid var(--primary);
+            cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation;
         }
-        
-        .mod-item-header {
-            font-weight: 700; margin-bottom: 4px;
+        .mod-article-header:active { background: var(--bg-input); }
+        .mod-article-name { font-weight: 800; font-size: 0.88em; flex: 1; min-width: 0; }
+        .mod-article-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+        .mod-article-count { font-size: 0.72em; color: var(--text-secondary); white-space: nowrap; }
+        .mod-delete-all {
+            font-size: 0.85em; padding: 4px 7px; border-radius: 6px; cursor: pointer;
+            -webkit-tap-highlight-color: transparent; touch-action: manipulation;
         }
-        
-        .mod-item-detail {
-            font-size: 0.85em; color: var(--text-secondary); margin-bottom: 2px;
+        .mod-delete-all:active { background: rgba(248,113,113,0.25); }
+
+        .mod-color-header {
+            display: flex; justify-content: space-between; align-items: center; gap: 8px;
+            padding: 6px 4px; margin-top: 8px; font-size: 0.78em; font-weight: 700;
+            color: var(--text-secondary); border-bottom: 1px solid var(--border);
         }
-        
-        .mod-item-change {
-            margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border);
-            display: flex; justify-content: space-between; align-items: center;
-            font-size: 0.9em;
-        }
-        
-        .mod-old { color: var(--danger); text-decoration: line-through; }
-        .mod-new { color: var(--success); font-weight: 700; font-size: 1.2em; }
-        
+        .mod-sizes-grid { margin-bottom: 4px; }
+
         /* PANTALLA DE CARGA */
         .loading-screen {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
@@ -757,52 +765,6 @@
         .setting-control { flex-shrink: 0; margin-left: 12px; }
         
         /* Toggle switch */
-
-        /* === ARTICLE MATRIX VIEW === */
-        .matrix-article-name { font-size: 1.15em; font-weight: 800; margin-bottom: 8px; }
-        .matrix-stats { display: flex; gap: 12px; font-size: 0.75em; color: var(--text-secondary); margin-bottom: 14px; }
-        .matrix-color-section { margin-bottom: 16px; }
-        .matrix-color-title { font-size: 0.85em; font-weight: 700; margin-bottom: 6px; padding: 4px 10px; background: var(--bg-input); border-radius: 6px; display: inline-block; }
-        .matrix-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
-        .matrix-cell {
-            width: 58px; text-align: center; padding: 6px 2px; border-radius: 8px;
-            border: 2px solid var(--border); cursor: pointer; transition: all 0.15s;
-            background: var(--bg-input); user-select: none; -webkit-tap-highlight-color: transparent;
-        }
-        .matrix-cell:hover { border-color: var(--primary); }
-        .matrix-cell.selected { border-color: var(--primary); background: rgba(79,172,254,0.15); box-shadow: 0 0 0 2px rgba(79,172,254,0.3); }
-        .matrix-cell.modified { border-color: var(--purple); background: rgba(167,139,250,0.12); }
-        .matrix-cell.zero { opacity: 0.5; }
-        .matrix-cell.zero .matrix-cell-stock { text-decoration: line-through; color: var(--danger); }
-        .matrix-cell-size { font-size: 0.65em; color: var(--text-secondary); font-weight: 600; }
-        .matrix-cell-stock { font-size: 1.1em; font-weight: 800; margin-top: 1px; }
-        .matrix-cell-stock.high { color: var(--success); }
-        .matrix-cell-stock.med { color: var(--warning); }
-        .matrix-cell-stock.low { color: var(--danger); }
-        .matrix-controls {
-            position: sticky; bottom: 0; background: var(--bg-card); border-top: 1px solid var(--border);
-            padding: 10px 0 4px; margin-top: 12px; display: none; align-items: center; gap: 8px; justify-content: center;
-        }
-        .matrix-controls.show { display: flex; }
-        .matrix-controls-label { font-size: 0.75em; color: var(--text-secondary); max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .matrix-ctrl-btn {
-            width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--border);
-            background: var(--bg-input); color: var(--text); font-size: 1.3em; font-weight: 700;
-            cursor: pointer; display: flex; align-items: center; justify-content: center;
-            -webkit-tap-highlight-color: transparent; touch-action: manipulation;
-        }
-        .matrix-ctrl-btn.minus { color: var(--danger); }
-        .matrix-ctrl-btn.minus:active { background: rgba(239,68,68,0.2); }
-        .matrix-ctrl-btn.plus { color: var(--success); }
-        .matrix-ctrl-btn.plus:active { background: rgba(34,197,94,0.2); }
-        .matrix-ctrl-btn.zero-btn { font-size: 1em; color: var(--warning); }
-        .matrix-ctrl-val { font-size: 1.4em; font-weight: 800; min-width: 36px; text-align: center; }
-        .matrix-manual { width: 50px; padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text); text-align: center; font-size: 0.95em; }
-        .matrix-set-btn { padding: 8px 12px; border-radius: 8px; border: none; background: var(--primary); color: white; font-weight: 700; cursor: pointer; font-size: 0.85em; }
-        @media (max-width: 640px) {
-            .matrix-cell { width: 50px; padding: 5px 2px; }
-            .matrix-ctrl-btn { width: 40px; height: 40px; }
-        }
 
         .toggle {
             position: relative; display: inline-block; width: 48px; height: 26px; cursor: pointer;
@@ -921,6 +883,7 @@
         .article-sizes-grid::-webkit-scrollbar { display: none; }
         
         .article-size-cell {
+            position: relative;
             min-width: 48px; flex: 1; max-width: 68px;
             text-align: center; padding: 8px 2px; border-radius: 10px;
             border: 2px solid var(--border); cursor: pointer; transition: all 0.15s;
@@ -928,6 +891,47 @@
             -webkit-tap-highlight-color: transparent; touch-action: manipulation;
         }
         .article-size-cell:active { transform: scale(0.95); }
+
+        /* Circulito con el delta acumulado (+N / -N) sobre la celda de talle */
+        .asc-delta-badge {
+            position: absolute; top: -12px; right: -10px; z-index: 1;
+            min-width: 26px; padding: 3px 7px; border-radius: 12px;
+            font-size: 0.85em; font-weight: 800; line-height: 1.3; color: white;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+        }
+        .asc-delta-badge.pos { background: var(--success); }
+        .asc-delta-badge.neg { background: var(--danger); }
+
+        /* Número grande flotante al modificar stock (+5 verde / -4 rojo), se desvanece solo.
+           Todo centrado en columna: color/talle arriba (a todo el ancho, incluida la foto),
+           debajo foto + número en fila, y abajo el resultado. font-size en clamp() para que
+           en celulares angostos no se salga del recuadro. */
+        .stock-flash {
+            position: fixed; top: 38%; left: 50%; transform: translate(-50%, -50%) scale(1);
+            display: inline-flex; flex-direction: column; align-items: center; gap: 0.06em;
+            font-size: clamp(4.2em, 23vw, 10em); font-weight: 900; z-index: 9999; pointer-events: none;
+            padding: 0.16em 0.4em; border-radius: 0.22em; max-width: 90vw; box-sizing: border-box;
+            background: rgba(0,0,0,0.8); box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            opacity: 0; transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        .stock-flash.no-anim { transition: none !important; }
+        .stock-flash.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        .stock-flash.show.fade { opacity: 0; transform: translate(-50%, -68%) scale(1.25); }
+        .stock-flash.pos { color: var(--success); }
+        .stock-flash.neg { color: var(--danger); }
+        .stock-flash-label {
+            font-size: 0.16em; font-weight: 700; color: rgba(255,255,255,0.85);
+            white-space: nowrap; letter-spacing: 0.3px; text-align: center;
+        }
+        .stock-flash-row { display: flex; align-items: center; gap: 0.16em; }
+        .stock-flash-img {
+            width: 0.8em; height: 0.8em; border-radius: 0.14em; object-fit: cover;
+            flex-shrink: 0; background: rgba(255,255,255,0.08);
+        }
+        .stock-flash-result {
+            font-size: 0.32em; font-weight: 700; color: #4facfe;
+            white-space: nowrap; text-align: center;
+        }
         .article-size-cell.selected {
             border-color: var(--primary); background: rgba(79,172,254,0.18);
             box-shadow: 0 0 0 2px rgba(79,172,254,0.3);
@@ -947,7 +951,7 @@
         .article-edit-bar {
             position: fixed; bottom: 0; left: 0; right: 0;
             background: var(--bg-card); border-top: 2px solid var(--primary);
-            padding: 6px 10px 8px; z-index: 110;
+            padding: 6px 10px 8px; z-index: 210; /* por encima del modal-overlay (200): se usa también desde "Ver Lista" */
             display: none; flex-direction: column; align-items: center; gap: 4px;
             box-shadow: 0 -4px 16px rgba(0,0,0,0.5);
         }
@@ -1102,14 +1106,12 @@
         </div>
 
         <div class="filter-row">
-            <div class="filter-chip view-toggle" id="viewToggle" onclick="toggleArticleListView()">🗂️ Por artículo</div>
             <div class="filter-chip active stock" data-stock="all">📦 Todos</div>
             <div class="filter-chip stock" data-stock="yes">✅ Con Stock</div>
             <div class="filter-chip critical" data-stock="critical">⚠️ Sin/Bajo Stock</div>
             <div class="filter-chip low" data-stock="low">🔶 Bajo Stock</div>
             <div class="filter-chip out" data-stock="no">❌ Sin Stock</div>
             <div class="filter-chip" id="locationBtn" onclick="toggleLocationSearch()">📍 Ubicación</div>
-            <div class="filter-chip" id="photosBtn" onclick="togglePhotos()">📷 Fotos</div>
             <div class="filter-chip modified-chip" data-stock="modified" id="modifiedChip" style="display:none;">✏️ Modif. (<span id="modChipCount">0</span>)</div>
         </div>
 
@@ -1275,9 +1277,8 @@
             },
         ];
         let homeMode = false;          // Inicio activo
-        let homeCatSelected = null;    // null = tiles de categoría; string = artículos de esa categoría
+        let homeCatSelected = null;    // null = tiles de categoría; string de esa categoría
         let _firstLoadHome = true;     // abrir en el Inicio en la primera carga
-        let articleListView = (localStorage.getItem('mikra_articleListView') ?? 'true') === 'true'; // lista por artículo (default) vs detalle SKU
 
         const state = {
             search: '',
@@ -1288,16 +1289,8 @@
             location: '',
             filtered: [],
             modifications: {},
-            page: 1,
-            pageSize: 50,
             lowStockThreshold: 5,
-            showImages: false,
             multiSelect: false,
-            theme: 'dark',
-            compactMode: false,
-            defaultImages: false,
-            autoSyncMin: 10,
-            showSku: false,
             ecommCutoff: ''
         };
         
@@ -1407,12 +1400,6 @@
         function closeImgModal() {
             $('imgModal').classList.remove('show');
             $('imgModalSrc').src = '';
-        }
-        
-        function togglePhotos() {
-            state.showImages = !state.showImages;
-            $('photosBtn').classList.toggle('active', state.showImages);
-            $('productList').classList.toggle('show-images', state.showImages);
         }
         
         // === GALERÍA DE COLORES POR IMAGEN ===
@@ -1585,6 +1572,7 @@
                 }
             });
             UNIQUE_ARTICLES = Object.values(articles).sort((a, b) => b.totalStock - a.totalStock);
+            ARTICLE_IMG_CACHE = {}; _articleImgCacheKey = null; // productos cambiaron → invalidar caché de imágenes
         }
         
         function showAutocomplete(query) {
@@ -1600,28 +1588,72 @@
             ).join('');
             $('autocomplete').classList.add('show');
         }
-        
+
+        // ===== ÚLTIMAS BÚSQUEDAS =====
+        const RECENT_KEY = 'mikra_recentSearches';
+        const RECENT_MAX = 8;
+        // Cada entrada recuerda si vino de un artículo puntual (exact:true → al volver a
+        // tocarla, entra directo al detalle) o de un texto tipeado suelto (exact:false → vuelve
+        // a filtrar, porque puede haber varios artículos parecidos, ej. "Top Algodón" / "Top Algodón x3").
+        function getRecentSearches() {
+            try {
+                const raw = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]');
+                return raw.map(item => typeof item === 'string' ? { name: item, exact: false } : item);
+            } catch(e) { return []; }
+        }
+        function addRecentSearch(term, exact) {
+            term = (term || '').trim();
+            if (term.length < 2) return;
+            let list = getRecentSearches().filter(t => t.name.toLowerCase() !== term.toLowerCase());
+            list.unshift({ name: term, exact: !!exact });
+            list = list.slice(0, RECENT_MAX);
+            try { localStorage.setItem(RECENT_KEY, JSON.stringify(list)); } catch(e) {}
+        }
+        function removeRecentSearch(term) {
+            const list = getRecentSearches().filter(t => t.name.toLowerCase() !== (term || '').toLowerCase());
+            try { localStorage.setItem(RECENT_KEY, JSON.stringify(list)); } catch(e) {}
+        }
+        function clearRecentSearches() {
+            try { localStorage.removeItem(RECENT_KEY); } catch(e) {}
+            $('autocomplete').classList.remove('show');
+        }
+        function showRecentSearches() {
+            const list = getRecentSearches();
+            const ac = $('autocomplete');
+            if (!list.length) { ac.classList.remove('show'); return; }
+            ac.innerHTML =
+                '<div class="autocomplete-header">🕘 Últimas búsquedas' +
+                '<span class="autocomplete-clear-recent" data-clear-recent="1">Borrar</span></div>' +
+                list.map(item => {
+                    const safe = item.name.replace(/"/g, '&quot;');
+                    return '<div class="autocomplete-item recent" data-name="' + safe + '" data-exact="' + (item.exact ? '1' : '0') + '">' +
+                        '<span class="autocomplete-name">🔍 ' + item.name + '</span>' +
+                        '<span class="autocomplete-remove" data-remove="' + safe + '">✕</span></div>';
+                }).join('');
+            ac.classList.add('show');
+        }
+
         function clearSearch() {
             $('searchInput').value = '';
             state.search = ''; state.searchExact = false; state.colors = []; state.sizes = [];
             state.multiSelect = false; $('multiToggle').classList.remove('active');
             $('searchClear').classList.remove('show');
-            $('autocomplete').classList.remove('show');
-            forceListView = false;
             applyFilters();
+            showRecentSearches();
+            $('searchInput').focus();
         }
-        
+
         function applyFilters() {
             homeMode = false;   // cualquier búsqueda/filtro sale del Inicio
             // Use pre-computed search index if available
             let r = SEARCH_INDEX.length ? [...SEARCH_INDEX] : [...PRODUCTS];
-            
+
             if (state.stock === 'yes') r = r.filter(p => p.stock > 0);
             else if (state.stock === 'low') r = r.filter(p => p.stock > 0 && p.stock <= state.lowStockThreshold);
             else if (state.stock === 'no') r = r.filter(p => p.stock === 0);
             else if (state.stock === 'critical') r = r.filter(p => p.stock <= state.lowStockThreshold);
             else if (state.stock === 'modified') r = r.filter(p => !!state.modifications[p.codigo]);
-            
+
             if (state.search) {
                 const q = state.search.toLowerCase();
                 if (state.searchExact) {
@@ -1631,18 +1663,29 @@
                     r = r.filter(p => (p._search || '').includes(q));
                 }
             }
-            
+
             if (state.location) {
                 const loc = state.location.toLowerCase();
                 r = r.filter(p => (p._ubicacion || (p.ubicacion||'').toLowerCase()).includes(loc));
             }
-            
+
+            // Si el texto tipeado coincide con un único artículo, saltar directo a su detalle
+            // (en vez de mostrar una tarjeta sola para tocar). Con 0 o 2+ artículos, queda en tarjetas.
+            if (state.search && !state.searchExact) {
+                const names = new Set(r.map(p => p.titulo || p.articulo || '').filter(Boolean));
+                if (names.size === 1) {
+                    state.searchExact = true;
+                    state.search = [...names][0];
+                    $('searchInput').value = state.search;
+                }
+            }
+
             updateDynamicFilters(r);
             if (state.colors.length > 0) r = r.filter(p => state.colors.includes(p.color));
             if (state.sizes.length > 0) r = r.filter(p => state.sizes.includes(p.talle));
-            
+
             r = sortProducts(r);
-            state.filtered = r; state.page = 1;
+            state.filtered = r;
             render(); updateActiveFilterTags(); updateClearFiltersBtn(); updateGalleryButton();
         }
         
@@ -1723,12 +1766,20 @@
             const q = (name || '').toLowerCase();
             return PRODUCTS.filter(p => (p.titulo || p.articulo || '').toLowerCase() === q);
         }
+        // Caché de imágenes por artículo: evita re-escanear PRODUCTS en cada render/tecla.
+        // Se invalida cuando cambian los productos (updateUniqueArticles) o el set de imágenes.
+        let ARTICLE_IMG_CACHE = {};
+        let _articleImgCacheKey = null;
         function getArticleImage(name) {
+            if (_articleImgCacheKey !== IMAGES_MAP) { ARTICLE_IMG_CACHE = {}; _articleImgCacheKey = IMAGES_MAP; }
+            if (name in ARTICLE_IMG_CACHE) return ARTICLE_IMG_CACHE[name];
+            let result = '';
             for (const p of _homeArticleProducts(name)) {
                 const u = getProductImage(p.codigo, p);
-                if (u) return u;
+                if (u) { result = u; break; }
             }
-            return '';
+            ARTICLE_IMG_CACHE[name] = result;
+            return result;
         }
         function getArticleStock(name) {
             const ps = _homeArticleProducts(name);
@@ -1754,6 +1805,7 @@
             $('searchInput').value = '';
             $('searchClear').classList.remove('show');
             $('autocomplete').classList.remove('show');
+            articleCloseEditBar(); // si quedaba una edición abierta, cerrarla también
             renderHomeScreen();
             window.scrollTo({ top: 0 });
         }
@@ -1762,10 +1814,13 @@
 
         // Tocar un artículo del Inicio → abre su vista de edición (igual que buscarlo exacto)
         function openArticleFromHome(name) {
+            // Si ya estábamos fuera del Inicio (viniendo de una búsqueda con varios resultados),
+            // guardar también como búsqueda reciente al elegir la tarjeta — exact:true porque
+            // ya es un artículo puntual, así que al volver a tocarla entra directo a su detalle.
+            if (!homeMode) addRecentSearch(name, true);
             homeMode = false;
             $('searchInput').value = name;
             state.search = name; state.searchExact = true; state.colors = []; state.sizes = [];
-            forceListView = false;
             $('searchClear').classList.add('show');
             $('autocomplete').classList.remove('show');
             applyFilters();
@@ -1819,28 +1874,33 @@
         function _filteredArticles() {
             let arts = UNIQUE_ARTICLES;
             const q = (state.search || '').toLowerCase();
-            if (q && !state.searchExact) arts = arts.filter(a => a.name.toLowerCase().includes(q));
+            if (q && state.searchExact) arts = arts.filter(a => a.name.toLowerCase() === q);
+            else if (q) arts = arts.filter(a => a.name.toLowerCase().includes(q));
+
             if (state.stock === 'yes') arts = arts.filter(a => a.totalStock > 0);
             else if (state.stock === 'no') arts = arts.filter(a => a.totalStock <= 0);
             else if (state.stock === 'low') arts = arts.filter(a => a.totalStock > 0 && a.totalStock <= state.lowStockThreshold);
             else if (state.stock === 'critical') arts = arts.filter(a => a.totalStock <= state.lowStockThreshold);
+
+            // Filtros que dependen de variantes puntuales (no del total del artículo):
+            // un artículo se muestra si tiene AL MENOS una variante que cumple todo lo demás.
+            if (state.stock === 'modified' || state.location || state.colors.length || state.sizes.length) {
+                const loc = state.location.toLowerCase();
+                arts = arts.filter(a => _homeArticleProducts(a.name).some(p => {
+                    if (state.stock === 'modified' && !state.modifications[p.codigo]) return false;
+                    if (loc && !(p.ubicacion || '').toLowerCase().includes(loc)) return false;
+                    if (state.colors.length && !state.colors.includes(p.color)) return false;
+                    if (state.sizes.length && !state.sizes.includes(p.talle)) return false;
+                    return true;
+                }));
+            }
             return arts;
         }
-        function updateViewToggle(isArticleMode) {
-            const el = $('viewToggle'); if (!el) return;
-            el.textContent = isArticleMode ? '🗂️ Por artículo' : '📋 Por SKU';
-            el.classList.toggle('active', isArticleMode);
-        }
-        function toggleArticleListView() {
-            articleListView = !articleListView;
-            try { localStorage.setItem('mikra_articleListView', String(articleListView)); } catch(e) {}
-            applyFilters();
-        }
+
         function renderArticleListView() {
             const arts = _filteredArticles();
             $('showingCount').textContent = arts.length;
             $('totalCount').textContent = UNIQUE_ARTICLES.length.toLocaleString();
-            $('pagination').innerHTML = '';
             if (!arts.length) {
                 $('productList').innerHTML = '<div class="empty"><div class="empty-icon">🔍</div><div>No se encontraron artículos</div></div>';
                 return;
@@ -1865,124 +1925,16 @@
             if (homeMode) { renderHomeScreen(); return; }
             showHomeUI(false);
 
-            // Article detail mode
+            // Artículo único (búsqueda exacta o un solo resultado) → vista de detalle editable
             if (isArticleDetailMode()) {
                 renderArticleDetail();
                 updateModificationCount();
                 return;
             }
 
-            // Normal list mode
+            // En cualquier otro caso: tarjetas por artículo (varios resultados o ninguno)
             hideArticleDetail();
-
-            // Lista por artículo (default): tocás un artículo → editás sus tallas.
-            // Cae al detalle por SKU si hay filtros de color/talle/ubicación o vista "modificados".
-            const useArticleList = articleListView && !state.location && state.stock !== 'modified'
-                && state.colors.length === 0 && state.sizes.length === 0;
-            updateViewToggle(useArticleList);
-            if (useArticleList) { renderArticleListView(); return; }
-
-            const start = (state.page - 1) * state.pageSize;
-            const items = state.filtered.slice(start, start + state.pageSize);
-            const totalPages = Math.ceil(state.filtered.length / state.pageSize);
-            
-            $('showingCount').textContent = Math.min(start + state.pageSize, state.filtered.length);
-            $('totalCount').textContent = state.filtered.length.toLocaleString();
-            
-            if (!items.length) {
-                $('productList').innerHTML = '<div class="empty"><div class="empty-icon">🔍</div><div>No se encontraron productos</div></div>';
-                $('pagination').innerHTML = '';
-                return;
-            }
-            
-            let html = [], lastColor = null;
-            
-            // Show banner to switch back to detail view when in forceListView
-            if (forceListView && state.searchExact && state.search) {
-                html.push('<div style="padding:8px;text-align:center;background:var(--bg-input);border-radius:8px;margin-bottom:2px;cursor:pointer;font-size:0.8em;font-weight:600;color:var(--primary);" onclick="switchToDetailView()">📊 Volver a vista detalle</div>');
-            }
-            
-            items.forEach(p => {
-                if (p.color !== lastColor) {
-                    html.push('<div class="color-divider">🎨 ' + (p.color || 'Sin color') + '</div>');
-                    lastColor = p.color;
-                }
-                
-                const mod = state.modifications[p.codigo];
-                const isModified = !!mod;
-                const currentStock = isModified ? mod.newStock : p.stock;
-                const stockClass = currentStock > 5 ? 'high' : currentStock > 0 ? 'med' : 'low';
-                const noStock = currentStock <= 0;
-                
-                let stockDisplay = '<div class="stock-num ' + stockClass + '">' + currentStock + '</div>';
-                
-                if (isModified) {
-                    if (mod.tipo === 'igual') {
-                        stockDisplay += '<div class="stock-modified" style="color:var(--primary);">= Ecomm ✓</div>';
-                    } else {
-                        stockDisplay += '<div class="stock-original">Original: ' + p.stock + '</div>';
-                        stockDisplay += '<div class="stock-modified">Modificado ✓</div>';
-                    }
-                } else {
-                    stockDisplay += '<div class="stock-label">actual</div>';
-                }
-                
-                const imgUrl = getProductImage(p.codigo, p);
-                const thumbHtml = imgUrl 
-                    ? '<img class="product-thumb" loading="lazy" src="' + imgUrl + '" onclick="showImgModal(\'' + p.codigo + '\',' + p.id + ')" onerror="this.outerHTML=\'<div class=product-thumb-placeholder>📦</div>\'">'
-                    : '<div class="product-thumb-placeholder">📦</div>';
-                
-                html.push('<div class="product-item' + (isModified ? ' modified' : '') + (noStock ? ' no-stock' : '') + '" id="item-' + p.id + '">' +
-                    thumbHtml +
-                    '<div class="product-info">' +
-                    '<div class="product-meta">' + (p.color || '-') + ' • Talle ' + (p.talle || '-') + '</div>' +
-                    (state.showSku ? '<div class="product-sku">SKU: ' + p.codigo + ' | Ubic: ' + (p.ubicacion || '-') + '</div>' : '') +
-                    '<div class="product-name" style="cursor:pointer;" onclick="openArticleMatrix(\'' + (p.titulo || p.articulo || '-').replace(/'/g, "\\'") + '\')"><span style="border-bottom:1px dashed var(--text-secondary)">' + (p.titulo || p.articulo || '-') + '</span> ↗</div></div>' +
-                    '<div class="product-right">' +
-                    '<div class="product-stock">' + stockDisplay + '</div>' +
-                    '<div class="stock-controls">' +
-                    '<button class="stock-btn minus" onclick="modifyStock(' + p.id + ', -1, event)">−</button>' +
-                    '<button class="stock-btn plus" onclick="modifyStock(' + p.id + ', 1, event)">+</button>' +
-                    '<button class="stock-btn zero" onclick="setStockZero(' + p.id + ', event)">⊘</button>' +
-                    '<button class="stock-btn igual' + (mod && mod.tipo === 'igual' ? ' active' : '') + '" onclick="setStockIgual(' + p.id + ', event)" title="Confirmar stock actual para Ecomm">=</button>' +
-                    '<div class="stock-input-group">' +
-                    '<input type="number" class="stock-manual-input" id="manual-' + p.id + '" placeholder="' + currentStock + '" min="0">' +
-                    '<button class="stock-set-btn" onclick="setManualStock(' + p.id + ', event)">✓</button>' +
-                    '</div></div>' +
-                    '<button class="mobile-edit-btn" onclick="toggleMobileControls(' + p.id + ', event)" id="editBtn-' + p.id + '">✏️</button>' +
-                    '</div></div>' +
-                    '<div class="stock-controls-panel" id="panel-' + p.id + '">' +
-                    '<button class="stock-btn minus" onclick="modifyStock(' + p.id + ', -1, event)">−</button>' +
-                    '<button class="stock-btn plus" onclick="modifyStock(' + p.id + ', 1, event)">+</button>' +
-                    '<button class="stock-btn zero" onclick="setStockZero(' + p.id + ', event)">⊘</button>' +
-                    '<button class="stock-btn igual' + (mod && mod.tipo === 'igual' ? ' active' : '') + '" onclick="setStockIgual(' + p.id + ', event)" title="Confirmar stock actual para Ecomm">=</button>' +
-                    '<div class="stock-input-group">' +
-                    '<input type="number" class="stock-manual-input" id="mobile-manual-' + p.id + '" placeholder="' + currentStock + '" min="0">' +
-                    '<button class="stock-set-btn" onclick="setManualStockMobile(' + p.id + ', event)">✓</button>' +
-                    '</div></div>');
-            });
-            
-            $('productList').innerHTML = html.join('');
-            if (state.showImages) $('productList').classList.add('show-images');
-            
-            if (totalPages > 1) {
-                let h = '<button class="page-btn" onclick="goPage(' + (state.page - 1) + ')"' + (state.page === 1 ? ' disabled' : '') + '>‹</button>';
-                for (let i = Math.max(1, state.page - 2); i <= Math.min(totalPages, state.page + 2); i++) {
-                    h += '<button class="page-btn' + (i === state.page ? ' active' : '') + '" onclick="goPage(' + i + ')">' + i + '</button>';
-                }
-                h += '<button class="page-btn" onclick="goPage(' + (state.page + 1) + ')"' + (state.page === totalPages ? ' disabled' : '') + '>›</button>';
-                $('pagination').innerHTML = h;
-            } else { $('pagination').innerHTML = ''; }
-            
-            updateModificationCount();
-            
-            // Re-open active mobile panel after render
-            if (activeMobilePanel) {
-                const panel = $('panel-' + activeMobilePanel);
-                const btn = $('editBtn-' + activeMobilePanel);
-                if (panel) panel.classList.add('show');
-                if (btn) btn.classList.add('active');
-            }
+            renderArticleListView();
         }
         
         // #5 TARGETED DOM UPDATE - update single product card without full re-render
@@ -2029,500 +1981,92 @@
             updateModificationCount();
         }
         
-        // #1 UNDO - toast with undo button
-        function toastWithUndo(msg) {
-            clearTimeout(undoTimer);
-            const t = $('toast');
-            t.innerHTML = '<span>' + msg + '</span> <button onclick="undoLast()" class="undo-btn">DESHACER</button>';
-            t.className = 'toast show';
-            undoTimer = setTimeout(() => { t.className = 'toast'; undoStack.length = 0; }, 4000);
-        }
-        
-        function undoLast() {
-            clearTimeout(undoTimer);
-            const action = undoStack.pop();
-            if (!action) { toast('Nada que deshacer', 'warning'); return; }
-            
-            if (action.previousMod) {
-                state.modifications[action.sku] = action.previousMod;
-            } else {
-                delete state.modifications[action.sku];
-            }
-            
-            haptic('medium');
-            saveModifications();
-            render();
-            $('toast').className = 'toast';
-            toast('↩️ Deshecho');
-        }
-        
         function openMikra(codigo) { window.open('https://www.mikra.com.ar/search/?q=' + codigo, '_blank'); }
-        
-        let activeMobilePanel = null;
-        
-        function toggleMobileControls(id, e) {
-            e.stopPropagation();
-            const panel = $('panel-' + id);
-            const btn = $('editBtn-' + id);
-            
-            if (activeMobilePanel && activeMobilePanel !== id) {
-                const oldPanel = $('panel-' + activeMobilePanel);
-                const oldBtn = $('editBtn-' + activeMobilePanel);
-                if (oldPanel) oldPanel.classList.remove('show');
-                if (oldBtn) oldBtn.classList.remove('active');
-            }
-            
-            const isOpen = panel.classList.contains('show');
-            panel.classList.toggle('show');
-            btn.classList.toggle('active');
-            activeMobilePanel = isOpen ? null : id;
-        }
-        
-        function setManualStockMobile(id, e) {
-            e.stopPropagation();
-            const product = PRODUCTS.find(p => p.id === id);
-            if (!product) return;
-            const sku = product.codigo;
-            
-            const input = $('mobile-manual-' + id);
-            const value = parseInt(input.value);
-            
-            if (!input.value || isNaN(value) || value < 0) {
-                toast('⚠️ Ingresá una cantidad válida', 'warning');
-                haptic('error');
-                input.focus();
-                return;
-            }
-            
-            undoStack.push({ sku, previousMod: state.modifications[sku] ? {...state.modifications[sku]} : null, productName: (product.color || '-') + ' T:' + (product.talle || '-') });
-            
-            state.modifications[sku] = { oldStock: product.stock, newStock: value, product: product };
-            if (value === product.stock) delete state.modifications[sku];
-            
-            haptic('medium');
-            saveModifications();
-            input.value = '';
-            updateSingleProduct(id);
-            const diff = value - product.stock;
-            toast((diff >= 0 ? '+' : '') + diff);
-        }
-        
-        function goPage(p) {
-            const max = Math.ceil(state.filtered.length / state.pageSize);
-            if (p < 1 || p > max) return;
-            state.page = p; render();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-        
+
         let lastModifyTime = 0; // #8 double-tap prevention
-        const undoStack = []; // #1 undo history
-        let undoTimer = null;
-        
+
         function haptic(style) { // #10 haptic feedback
             if (navigator.vibrate) {
                 if (style === 'error') navigator.vibrate([30, 50, 30]);
                 else navigator.vibrate(style === 'medium' ? 25 : 10);
             }
         }
-        
-        function modifyStock(id, delta, e) {
-            e.stopPropagation();
-            
-            // #8 double-tap prevention (100ms throttle)
-            const now = Date.now();
-            if (now - lastModifyTime < 100) return;
-            lastModifyTime = now;
-            
-            const product = PRODUCTS.find(p => p.id === id);
-            if (!product) return;
-            const sku = product.codigo; // #2 use SKU as key
-            
-            // #1 save undo state BEFORE change
-            undoStack.push({
-                sku: sku,
-                previousMod: state.modifications[sku] ? {...state.modifications[sku]} : null,
-                productName: (product.color || '-') + ' T:' + (product.talle || '-')
-            });
-            
-            let mod = state.modifications[sku];
-            
-            if (!mod) {
-                let newStock;
-                if (product.stock < 0 && delta > 0) {
-                    newStock = delta;
-                } else {
-                    newStock = product.stock + delta;
-                }
-                mod = { oldStock: product.stock, newStock: newStock, product: product };
-            } else {
-                if (mod.newStock < 0 && delta > 0) {
-                    mod.newStock = delta;
-                } else {
-                    mod.newStock += delta;
-                }
-            }
-            
-            if (mod.newStock < 0) mod.newStock = 0;
-            
-            if (mod.newStock === mod.oldStock) {
-                delete state.modifications[sku];
-            } else {
-                // Si había un ajuste aplicado, lo invalidamos — el usuario cambió la base
-                delete mod.stockAntesDeAjuste;
-                delete mod.ajustePreCorte;
-                delete mod.ajusteCorteHora;
-                state.modifications[sku] = mod;
-            }
-
-            haptic('light');
-            saveModifications();
-            updateSingleProduct(id); // #5 targeted update instead of full render
-
-            const realChange = (state.modifications[sku] ? state.modifications[sku].newStock : product.stock) - product.stock;
-            toastWithUndo((realChange > 0 ? '+' : '') + realChange + ' ' + (product.color || ''));
-        }
-        
-        function setStockZero(id, e) {
-            e.stopPropagation();
-            const product = PRODUCTS.find(p => p.id === id);
-            if (!product) return;
-            const sku = product.codigo;
-            
-            if (!confirm('⚠️ ¿Poner stock en 0 para ' + (product.color || '-') + ' Talle ' + (product.talle || '-') + '?')) {
-                return;
-            }
-            
-            if (product.stock === 0 && !state.modifications[sku]) {
-                toast('Ya está en 0', 'warning');
-                return;
-            }
-            
-            undoStack.push({
-                sku: sku,
-                previousMod: state.modifications[sku] ? {...state.modifications[sku]} : null,
-                productName: (product.color || '-') + ' T:' + (product.talle || '-')
-            });
-            
-            if (product.stock === 0) {
-                delete state.modifications[sku];
-            } else {
-                state.modifications[sku] = {
-                    oldStock: product.stock,
-                    newStock: 0,
-                    product: product
-                };
-            }
-            
-            haptic('medium');
-            saveModifications();
-            updateSingleProduct(id);
-            toast('✓ Puesto en 0');
-        }
-        
-        function setStockIgual(id, e) {
-            e.stopPropagation();
-            const product = PRODUCTS.find(p => p.id === id);
-            if (!product) return;
-            const sku = product.codigo;
-            const mod = state.modifications[sku];
-
-            // Toggle: si ya tiene "igual", lo saca; si no, lo agrega
-            if (mod && mod.tipo === 'igual') {
-                undoStack.push({ sku, previousMod: { ...mod }, productName: (product.color || '-') + ' T:' + (product.talle || '-') });
-                delete state.modifications[sku];
-                haptic('light');
-                saveModifications();
-                updateSingleProduct(id);
-                updateModificationCount();
-                toast('↩️ Confirmación Ecomm quitada');
-                return;
-            }
-
-            // Si ya hay una modificación normal (cambio de stock), no pisarla
-            if (mod && mod.tipo !== 'igual') {
-                toast('⚠️ Ya tiene un cambio de stock. Enviá a Ecomm desde ahí.', 'warning');
-                return;
-            }
-
-            undoStack.push({ sku, previousMod: mod ? { ...mod } : null, productName: (product.color || '-') + ' T:' + (product.talle || '-') });
-
-            const currentStock = product.stock;
-            state.modifications[sku] = {
-                oldStock: currentStock,
-                newStock: currentStock,
-                product: product,
-                tipo: 'igual'
-            };
-
-            haptic('medium');
-            saveModifications();
-            updateSingleProduct(id);
-            updateModificationCount();
-            toast('✓ Stock confirmado — se verificará en Ecomm', 'success');
-        }
-
-        function setManualStock(id, e) {
-            e.stopPropagation();
-            const product = PRODUCTS.find(p => p.id === id);
-            if (!product) return;
-            const sku = product.codigo;
-            
-            const input = $('manual-' + id);
-            const value = parseInt(input.value);
-            
-            if (!input.value || isNaN(value) || value < 0) {
-                toast('⚠️ Ingresá una cantidad válida', 'warning');
-                haptic('error');
-                input.focus();
-                return;
-            }
-            
-            undoStack.push({ sku, previousMod: state.modifications[sku] ? {...state.modifications[sku]} : null, productName: (product.color || '-') + ' T:' + (product.talle || '-') });
-            
-            state.modifications[sku] = { oldStock: product.stock, newStock: value, product: product };
-            if (value === product.stock) delete state.modifications[sku];
-            
-            haptic('medium');
-            saveModifications();
-            input.value = '';
-            updateSingleProduct(id);
-            const diff = value - product.stock;
-            toast((diff >= 0 ? '+' : '') + diff);
-        }
-        
-
-        // === ARTICLE MATRIX VIEW ===
-        let matrixSelectedId = null;
-        
-        function openArticleMatrix(articleName) {
-            // Find all products for this article
-            const articleProducts = PRODUCTS.filter(p => (p.titulo || p.articulo || '') === articleName);
-            if (!articleProducts.length) { toast('No encontrado', 'warning'); return; }
-            
-            // Group by color
-            const colorGroups = {};
-            const allSizes = new Set();
-            articleProducts.forEach(p => {
-                const color = p.color || 'Sin color';
-                if (!colorGroups[color]) colorGroups[color] = {};
-                colorGroups[color][p.talle || '-'] = p;
-                allSizes.add(p.talle || '-');
-            });
-            
-            // Sort sizes - try numeric first, then SIZE_ORDER, then alpha
-            const sizesArr = [...allSizes].sort((a, b) => {
-                const na = parseFloat(a), nb = parseFloat(b);
-                if (!isNaN(na) && !isNaN(nb)) return na - nb;
-                const ia = SIZE_ORDER.indexOf(a.toUpperCase()), ib = SIZE_ORDER.indexOf(b.toUpperCase());
-                if (ia > -1 && ib > -1) return ia - ib;
-                if (ia > -1) return -1;
-                if (ib > -1) return 1;
-                return a.localeCompare(b);
-            });
-            
-            // Get image
-            const imgUrl = getProductImageFull(articleProducts[0].codigo, articleProducts[0]);
-            
-            // Total stock
-            let totalStock = 0;
-            articleProducts.forEach(p => {
-                const mod = state.modifications[p.codigo];
-                totalStock += mod ? mod.newStock : p.stock;
-            });
-            const modCount = articleProducts.filter(p => !!state.modifications[p.codigo]).length;
-            
-            // Build HTML
-            let html = '';
-            
-            // Image
-            if (imgUrl) {
-                html += '<div style="text-align:center;margin-bottom:10px;"><img src="' + imgUrl + '" style="max-height:180px;border-radius:10px;object-fit:contain;" onerror="this.remove()"></div>';
-            }
-            
-            // Stats line
-            html += '<div class="matrix-stats">' +
-                '<span>📦 ' + articleProducts.length + ' variantes</span>' +
-                '<span>📊 Stock total: <b>' + totalStock + '</b></span>' +
-                (modCount ? '<span style="color:var(--purple)">✏️ ' + modCount + ' modif.</span>' : '') +
-                '</div>';
-            
-            // Color sections
-            const colorNames = Object.keys(colorGroups).sort();
-            colorNames.forEach(color => {
-                const sizes = colorGroups[color];
-                html += '<div class="matrix-color-section">';
-                html += '<div class="matrix-color-title">🎨 ' + color + '</div>';
-                html += '<div class="matrix-grid">';
-                
-                sizesArr.forEach(size => {
-                    const p = sizes[size];
-                    if (!p) {
-                        // No variant for this size+color — empty cell
-                        html += '<div class="matrix-cell" style="opacity:0.15;cursor:default;"><div class="matrix-cell-size">' + size + '</div><div class="matrix-cell-stock">—</div></div>';
-                        return;
-                    }
-                    
-                    const mod = state.modifications[p.codigo];
-                    const isModified = !!mod;
-                    const currentStock = isModified ? mod.newStock : p.stock;
-                    const stockClass = currentStock > 5 ? 'high' : currentStock > 0 ? 'med' : 'low';
-                    const isZero = currentStock <= 0;
-                    
-                    html += '<div class="matrix-cell' + (isZero ? ' zero' : '') + (isModified ? ' modified' : '') + '" ' +
-                        'data-pid="' + p.id + '" onclick="matrixSelect(' + p.id + ')">' +
-                        '<div class="matrix-cell-size">' + size + '</div>' +
-                        '<div class="matrix-cell-stock ' + stockClass + '">' + currentStock + '</div>' +
-                        '</div>';
-                });
-                
-                html += '</div></div>';
-            });
-            
-            // Controls bar (sticky at bottom)
-            html += '<div class="matrix-controls" id="matrixControls">' +
-                '<div class="matrix-controls-label" id="matrixLabel">—</div>' +
-                '<button class="matrix-ctrl-btn minus" onclick="matrixModify(-1)">−</button>' +
-                '<div class="matrix-ctrl-val" id="matrixVal">0</div>' +
-                '<button class="matrix-ctrl-btn plus" onclick="matrixModify(1)">+</button>' +
-                '<button class="matrix-ctrl-btn zero-btn" onclick="matrixSetZero()">⊘</button>' +
-                '<input type="number" class="matrix-manual" id="matrixManual" placeholder="#" min="0">' +
-                '<button class="matrix-set-btn" onclick="matrixSetManual()">✓</button>' +
-                '</div>';
-            
-            matrixSelectedId = null;
-            $('modalTitle').textContent = '📦 ' + articleName;
-            $('modalBody').innerHTML = html;
-            showModal();
-        }
-        
-        function matrixSelect(productId) {
-            matrixSelectedId = productId;
-            const product = PRODUCTS.find(p => p.id === productId);
-            if (!product) return;
-            
-            // Highlight selected cell
-            document.querySelectorAll('.matrix-cell.selected').forEach(c => c.classList.remove('selected'));
-            const cell = document.querySelector('.matrix-cell[data-pid="' + productId + '"]');
-            if (cell) cell.classList.add('selected');
-            
-            // Show controls
-            const controls = $('matrixControls');
-            controls.classList.add('show');
-            
-            const mod = state.modifications[product.codigo];
-            const currentStock = mod ? mod.newStock : product.stock;
-            
-            $('matrixLabel').textContent = (product.color || '-') + ' T:' + (product.talle || '-');
-            $('matrixVal').textContent = currentStock;
-            $('matrixManual').value = '';
-            
-            haptic('light');
-        }
-        
-        function matrixModify(delta) {
-            if (!matrixSelectedId) return;
-            const product = PRODUCTS.find(p => p.id === matrixSelectedId);
-            if (!product) return;
-            const sku = product.codigo;
-            
-            undoStack.push({ sku, previousMod: state.modifications[sku] ? {...state.modifications[sku]} : null, productName: (product.color || '-') + ' T:' + (product.talle || '-') });
-            
-            let mod = state.modifications[sku];
-            if (!mod) {
-                mod = { oldStock: product.stock, newStock: Math.max(0, product.stock + delta), product };
-            } else {
-                mod.newStock = Math.max(0, mod.newStock + delta);
-            }
-            
-            if (mod.newStock === mod.oldStock) delete state.modifications[sku];
-            else state.modifications[sku] = mod;
-            
-            haptic('light');
-            saveModifications();
-            matrixRefreshCell(product);
-            updateModificationCount();
-        }
-        
-        function matrixSetZero() {
-            if (!matrixSelectedId) return;
-            const product = PRODUCTS.find(p => p.id === matrixSelectedId);
-            if (!product) return;
-            const sku = product.codigo;
-            
-            const currentStock = state.modifications[sku] ? state.modifications[sku].newStock : product.stock;
-            if (currentStock === 0) { toast('Ya está en 0'); return; }
-            
-            undoStack.push({ sku, previousMod: state.modifications[sku] ? {...state.modifications[sku]} : null, productName: (product.color || '-') + ' T:' + (product.talle || '-') });
-            
-            state.modifications[sku] = { oldStock: product.stock, newStock: 0, product };
-            if (product.stock === 0) delete state.modifications[sku];
-            
-            haptic('medium');
-            saveModifications();
-            matrixRefreshCell(product);
-            updateModificationCount();
-            toast('✓ Puesto en 0');
-        }
-        
-        function matrixSetManual() {
-            if (!matrixSelectedId) return;
-            const product = PRODUCTS.find(p => p.id === matrixSelectedId);
-            if (!product) return;
-            const sku = product.codigo;
-            const value = parseInt($('matrixManual').value);
-            
-            if (isNaN(value) || value < 0) { toast('⚠️ Cantidad inválida', 'warning'); return; }
-            
-            undoStack.push({ sku, previousMod: state.modifications[sku] ? {...state.modifications[sku]} : null, productName: (product.color || '-') + ' T:' + (product.talle || '-') });
-            
-            state.modifications[sku] = { oldStock: product.stock, newStock: value, product };
-            if (value === product.stock) delete state.modifications[sku];
-            
-            haptic('medium');
-            saveModifications();
-            $('matrixManual').value = '';
-            matrixRefreshCell(product);
-            updateModificationCount();
-            toast('✓ Stock: ' + value);
-        }
-        
-        function matrixRefreshCell(product) {
-            const mod = state.modifications[product.codigo];
-            const currentStock = mod ? mod.newStock : product.stock;
-            const stockClass = currentStock > 5 ? 'high' : currentStock > 0 ? 'med' : 'low';
-            const isZero = currentStock <= 0;
-            
-            const cell = document.querySelector('.matrix-cell[data-pid="' + product.id + '"]');
-            if (cell) {
-                cell.classList.toggle('zero', isZero);
-                cell.classList.toggle('modified', !!mod);
-                cell.querySelector('.matrix-cell-stock').className = 'matrix-cell-stock ' + stockClass;
-                cell.querySelector('.matrix-cell-stock').textContent = currentStock;
-            }
-            
-            // Update controls display
-            $('matrixVal').textContent = currentStock;
-        }
 
         // ============ ARTICLE DETAIL VIEW ============
         let articleSelectedId = null;
-        
+        let articleShowHiddenColors = false; // mostrar colores sin stock en ningún talle (temporadas viejas)
+        let _lastDetailArticleName = null;
+
         function isArticleDetailMode() {
-            return state.searchExact && state.search.length > 0 && !forceListView;
+            return state.searchExact && state.search.length > 0;
         }
-        
+
+        // Número grande flotante (+5 verde / -4 rojo) que aparece centrado en pantalla
+        // al tocar +/-/⊘/✓ y se va desvaneciendo solo. Se reusa el mismo elemento entre toques
+        // para que, si seguís tocando, el número se actualice y el tiempo en pantalla se reinicie.
+        // Todo centrado: arriba color/talle (a todo el ancho), en el medio foto + número grande
+        // en fila, abajo el stock resultante (en otro color, sin la palabra "quedan").
+        let _stockFlashTimer = null;
+        function showStockFlash(delta, label, resultStock, imgUrl) {
+            let el = document.getElementById('stockFlash');
+            if (!el) {
+                el = document.createElement('div');
+                el.id = 'stockFlash';
+                document.body.appendChild(el);
+            }
+            clearTimeout(_stockFlashTimer);
+            if (!delta) { el.className = 'stock-flash'; return; }
+            el.innerHTML = (label ? '<div class="stock-flash-label">' + label + '</div>' : '') +
+                '<div class="stock-flash-row">' +
+                    (imgUrl ? '<img class="stock-flash-img" src="' + imgUrl + '">' : '') +
+                    '<div class="stock-flash-num">' + (delta > 0 ? '+' : '') + delta + '</div>' +
+                '</div>' +
+                (resultStock !== undefined ? '<div class="stock-flash-result">' + resultStock + '</div>' : '');
+            el.className = 'stock-flash no-anim show ' + (delta > 0 ? 'pos' : 'neg');
+            void el.offsetWidth; // forzar reflow para que el próximo cambio de clase anime
+            el.classList.remove('no-anim');
+            _stockFlashTimer = setTimeout(() => { el.classList.add('fade'); }, 2200);
+        }
+
+        // Si tocás afuera de los controles de edición mientras el cartel está visible, se cierra
+        // ya (por si necesitás seguir rápido); tocar +/-/⊘/✓/celdas lo deja como está.
+        function hideStockFlashNow() {
+            clearTimeout(_stockFlashTimer);
+            const el = document.getElementById('stockFlash');
+            if (el) el.classList.add('fade');
+        }
+        document.addEventListener('click', e => {
+            const el = document.getElementById('stockFlash');
+            if (!el || !el.classList.contains('show') || el.classList.contains('fade')) return;
+            if (e.target.closest('.article-edit-bar') || e.target.closest('.article-size-cell')) return;
+            hideStockFlashNow();
+        }, true);
+
+        // Circulito persistente con el delta acumulado (+N / -N) sobre la celda de talle
+        function _deltaBadgeHtml(mod) {
+            if (!mod || mod.tipo === 'igual') return '';
+            const delta = mod.newStock - mod.oldStock;
+            if (delta === 0) return '';
+            const cls = delta > 0 ? 'pos' : 'neg';
+            return '<span class="asc-delta-badge ' + cls + '">' + (delta > 0 ? '+' : '') + delta + '</span>';
+        }
+
         function renderArticleDetail() {
             const articleName = state.search;
+            if (_lastDetailArticleName !== articleName) {
+                articleShowHiddenColors = false; // nuevo artículo → arrancar ocultando los sin stock
+                _lastDetailArticleName = articleName;
+            }
             const allProducts = PRODUCTS.filter(p => {
                 const name = (p.titulo || p.articulo || '').toLowerCase();
                 return name === articleName.toLowerCase();
             });
-            
+
             if (!allProducts.length) {
                 $('articleDetailView').classList.remove('active');
                 return;
             }
-            
+
             // Apply stock filter
             let products = [...allProducts];
             if (state.stock === 'yes') products = products.filter(p => p.stock > 0);
@@ -2568,18 +2112,34 @@
             });
             
             let html = '';
-            
-            // Stats + photo toggle + list view toggle
+
+            // Stock total por color — decide qué colores se ocultan (sin stock en ningún talle)
+            const colorNamesAll = Object.keys(colorGroups).sort();
+            const colorStockMap = {};
+            colorNamesAll.forEach(color => {
+                let s = 0;
+                colorGroups[color].forEach(p => {
+                    const mod = state.modifications[p.codigo];
+                    s += mod ? mod.newStock : p.stock;
+                });
+                colorStockMap[color] = s;
+            });
+            const hiddenColorNames = colorNamesAll.filter(c => colorStockMap[c] <= 0);
+            const colorNames = articleShowHiddenColors ? colorNamesAll : colorNamesAll.filter(c => colorStockMap[c] > 0);
+
+            // Stats + photo toggle + mostrar/ocultar colores sin stock
             html += '<div class="article-stats-row">' +
                 '<span>📦 <strong>' + allProducts.length + '</strong> var.</span>' +
                 '<span>📊 <strong>' + totalStock + '</strong></span>' +
                 (modCount ? '<span style="color:var(--purple)">✏️ ' + modCount + '</span>' : '') +
                 '<button class="article-photo-toggle" id="articlePhotoToggle" onclick="toggleArticlePhotos()">📷</button>' +
-                '<button class="article-photo-toggle" onclick="switchToListView()">📝 Lista</button>' +
+                (hiddenColorNames.length
+                    ? '<button class="article-photo-toggle' + (articleShowHiddenColors ? ' active' : '') + '" onclick="toggleHiddenColors()">' +
+                        (articleShowHiddenColors ? '🙈 Ocultar sin stock' : '👁️ Mostrar ocultos (' + hiddenColorNames.length + ')') +
+                      '</button>'
+                    : '') +
                 '</div>';
-            
-            // Per color
-            const colorNames = Object.keys(colorGroups).sort();
+
             colorNames.forEach(color => {
                 const prods = colorGroups[color];
                 // Sort by size
@@ -2591,14 +2151,9 @@
                     if (ia > -1 && ib > -1) return ia - ib;
                     return sa.localeCompare(sb);
                 });
-                
-                // Color total stock
-                let colorStock = 0;
-                prods.forEach(p => {
-                    const mod = state.modifications[p.codigo];
-                    colorStock += mod ? mod.newStock : p.stock;
-                });
-                
+
+                const colorStock = colorStockMap[color];
+
                 // Find image for this color
                 let colorImgUrl = '';
                 for (const p of prods) {
@@ -2633,12 +2188,13 @@
                     const stockClass = currentStock > 5 ? 'high' : currentStock > 0 ? 'med' : 'low';
                     const isZero = currentStock <= 0;
                     const isSelected = articleSelectedId === p.id;
-                    
-                    html += '<div class="article-size-cell' + 
-                        (isZero ? ' zero' : '') + 
-                        (isModified ? ' modified' : '') + 
-                        (isSelected ? ' selected' : '') + 
+
+                    html += '<div class="article-size-cell' +
+                        (isZero ? ' zero' : '') +
+                        (isModified ? ' modified' : '') +
+                        (isSelected ? ' selected' : '') +
                         '" data-pid="' + p.id + '" onclick="articleSelectSize(' + p.id + ')">' +
+                        _deltaBadgeHtml(mod) +
                         '<div class="asc-size">' + (p.talle || '-') + '</div>' +
                         '<div class="asc-stock ' + stockClass + '">' + currentStock + '</div>' +
                         '</div>';
@@ -2648,8 +2204,10 @@
             
             if (!products.length) {
                 html = '<div class="empty"><div class="empty-icon">🔍</div><div>No hay variantes con estos filtros</div></div>';
+            } else if (!colorNames.length) {
+                html += '<div class="empty" style="padding:30px 16px;"><div class="empty-icon">🙈</div><div>Todos los colores están sin stock — tocá "Mostrar ocultos" arriba</div></div>';
             }
-            
+
             $('articleDetailContent').innerHTML = html;
             $('articleDetailView').classList.add('active');
             $('productList').style.display = 'none';
@@ -2687,29 +2245,27 @@
             const btn = $('articlePhotoToggle');
             if (btn) btn.classList.toggle('active', view.classList.contains('show-photos'));
         }
-        
-        // Switch to old-style list view (with pencil edit per row)
-        let forceListView = false;
-        
-        function switchToListView() {
-            forceListView = true;
-            hideArticleDetail();
-            render();
-        }
-        
-        function switchToDetailView() {
-            forceListView = false;
-            render();
+
+        function toggleHiddenColors() {
+            articleShowHiddenColors = !articleShowHiddenColors;
+            renderArticleDetail();
         }
         
         function articleSelectSize(productId) {
             articleSelectedId = productId;
-            
+
             // Highlight selected cell
             document.querySelectorAll('.article-size-cell.selected').forEach(c => c.classList.remove('selected'));
             const cell = document.querySelector('.article-size-cell[data-pid="' + productId + '"]');
             if (cell) cell.classList.add('selected');
-            
+
+            // Precargar la foto ahora, para que ya esté en caché cuando se abra el cartel grande
+            const product = PRODUCTS.find(p => p.id === productId);
+            if (product) {
+                const imgUrl = getProductImage(product.codigo, product);
+                if (imgUrl) { const preload = new Image(); preload.src = imgUrl; }
+            }
+
             articleUpdateEditBar();
             haptic('light');
         }
@@ -2753,8 +2309,17 @@
                 const stockEl = cell.querySelector('.asc-stock');
                 stockEl.className = 'asc-stock ' + stockClass;
                 stockEl.textContent = currentStock;
+
+                let badge = cell.querySelector('.asc-delta-badge');
+                const badgeHtml = _deltaBadgeHtml(mod);
+                if (badgeHtml) {
+                    if (!badge) { cell.insertAdjacentHTML('afterbegin', badgeHtml); }
+                    else { badge.outerHTML = badgeHtml; }
+                } else if (badge) {
+                    badge.remove();
+                }
             }
-            
+
             articleUpdateEditBar();
             updateModificationCount();
         }
@@ -2768,9 +2333,7 @@
             const now = Date.now();
             if (now - lastModifyTime < 100) return;
             lastModifyTime = now;
-            
-            undoStack.push({ sku, previousMod: state.modifications[sku] ? {...state.modifications[sku]} : null, productName: (product.color || '-') + ' T:' + (product.talle || '-') });
-            
+
             let mod = state.modifications[sku];
             if (!mod) {
                 const base = product.stock < 0 && delta > 0 ? 0 : product.stock;
@@ -2792,11 +2355,13 @@
             haptic('light');
             saveModifications();
             articleRefreshCell(product);
-            
-            const realChange = (state.modifications[sku] ? state.modifications[sku].newStock : product.stock) - product.stock;
-            toastWithUndo((realChange > 0 ? '+' : '') + realChange + '  ' + (product.color || '') + ' T:' + (product.talle || ''));
+            _refreshModsModalIfOpen();
+
+            const newStock = state.modifications[sku] ? state.modifications[sku].newStock : product.stock;
+            const realChange = newStock - product.stock;
+            showStockFlash(realChange, (product.color || '-') + ' · T:' + (product.talle || '-'), newStock, getProductImage(product.codigo, product));
         }
-        
+
         function articleSetZero() {
             if (!articleSelectedId) return;
             const product = PRODUCTS.find(p => p.id === articleSelectedId);
@@ -2805,18 +2370,18 @@
             
             const currentStock = state.modifications[sku] ? state.modifications[sku].newStock : product.stock;
             if (currentStock === 0) { toast('Ya está en 0'); return; }
-            
-            undoStack.push({ sku, previousMod: state.modifications[sku] ? {...state.modifications[sku]} : null, productName: (product.color || '-') + ' T:' + (product.talle || '-') });
-            
+
             state.modifications[sku] = { oldStock: product.stock, newStock: 0, product };
             if (product.stock === 0) delete state.modifications[sku];
-            
+
             haptic('medium');
             saveModifications();
             articleRefreshCell(product);
+            _refreshModsModalIfOpen();
+            showStockFlash(0 - currentStock, (product.color || '-') + ' · T:' + (product.talle || '-'), 0, getProductImage(product.codigo, product));
             toast('✓ → 0  ' + (product.color || '') + ' T:' + (product.talle || ''));
         }
-        
+
         function articleSetIgual() {
             if (!articleSelectedId) return;
             const product = PRODUCTS.find(p => p.id === articleSelectedId);
@@ -2826,9 +2391,8 @@
 
             // Toggle off si ya está en modo "igual"
             if (mod && mod.tipo === 'igual') {
-                undoStack.push({ sku, previousMod: { ...mod }, productName: (product.color || '-') + ' T:' + (product.talle || '-') });
                 delete state.modifications[sku];
-                haptic('light'); saveModifications(); articleRefreshCell(product); updateModificationCount();
+                haptic('light'); saveModifications(); articleRefreshCell(product); updateModificationCount(); _refreshModsModalIfOpen();
                 toast('↩️ Confirmación Ecomm quitada');
                 return;
             }
@@ -2837,9 +2401,8 @@
                 toast('⚠️ Ya tiene un cambio de stock. Enviá a Ecomm desde ahí.', 'warning');
                 return;
             }
-            undoStack.push({ sku, previousMod: mod ? { ...mod } : null, productName: (product.color || '-') + ' T:' + (product.talle || '-') });
             state.modifications[sku] = { oldStock: product.stock, newStock: product.stock, product, tipo: 'igual' };
-            haptic('medium'); saveModifications(); articleRefreshCell(product); updateModificationCount();
+            haptic('medium'); saveModifications(); articleRefreshCell(product); updateModificationCount(); _refreshModsModalIfOpen();
             toast('✓ Stock confirmado — se verificará en Ecomm', 'success');
         }
 
@@ -2857,8 +2420,6 @@
             if (raw === '') { articleCloseEditBar(); return; }   // sin tipear → solo cerrar
             if (isNaN(value) || value < 0) { toast('⚠️ Cantidad inválida', 'warning'); return; }
 
-            undoStack.push({ sku, previousMod: state.modifications[sku] ? {...state.modifications[sku]} : null, productName: (product.color || '-') + ' T:' + (product.talle || '-') });
-
             state.modifications[sku] = { oldStock: product.stock, newStock: value, product };
             if (value === product.stock) delete state.modifications[sku];
 
@@ -2866,6 +2427,8 @@
             saveModifications();
             $('articleManualInput').value = '';
             articleRefreshCell(product);
+            _refreshModsModalIfOpen();
+            showStockFlash(value - product.stock, (product.color || '-') + ' · T:' + (product.talle || '-'), value, getProductImage(product.codigo, product));
             toast('✓ ' + value + '  ' + (product.color || '') + ' T:' + (product.talle || ''));
             articleCloseEditBar();   // confirma y cierra
         }
@@ -2891,151 +2454,151 @@
             $('modChipCount').textContent = count;
         }
         
+        // Estado de expansión del modal "Ver modificados": qué artículos están desplegados.
+        // Empieza todo colapsado (compacto) cada vez que se abre.
+        let modsExpandedArticles = new Set();
+
         function viewModifications() {
             const mods = Object.values(state.modifications);
             if (!mods.length) { toast('No hay modificaciones', 'warning'); return; }
+            modsExpandedArticles = new Set();
             $('modalTitle').textContent = 'Modificaciones (' + mods.length + ')';
             $('modalBody').innerHTML = _renderModList(mods);
             showModal();
         }
 
+        function toggleModArticle(name) {
+            if (modsExpandedArticles.has(name)) modsExpandedArticles.delete(name);
+            else modsExpandedArticles.add(name);
+            $('modalBody').innerHTML = _renderModList(Object.values(state.modifications));
+        }
+
+        // Refresca el modal de modificaciones (título + lista) o lo cierra si ya no queda ninguna
+        function _refreshModListModal() {
+            const mods = Object.values(state.modifications);
+            if (!mods.length) { closeModal(); toast('Lista vacía', 'warning'); return; }
+            $('modalTitle').textContent = 'Modificaciones (' + mods.length + ')';
+            $('modalBody').innerHTML = _renderModList(mods);
+        }
+
+        // Si "Ver Lista" está abierto y editás una celda desde la barra de abajo, mantenerlo sincronizado
+        function _refreshModsModalIfOpen() {
+            if ($('modalOverlay').classList.contains('show') && $('modalTitle').textContent.indexOf('Modificaciones') === 0) {
+                _refreshModListModal();
+            }
+        }
+
+        function deleteAllModsForArticle(articleName) {
+            if (!confirm('⚠️ ¿Eliminar TODAS las modificaciones de "' + articleName + '"?')) return;
+            Object.keys(state.modifications).forEach(sku => {
+                const mod = state.modifications[sku];
+                const name = mod.product.titulo || mod.product.articulo || 'Sin nombre';
+                if (name === articleName) { delete state.modifications[sku]; updateSingleProduct(mod.product.id); }
+            });
+            saveModifications();
+            updateModificationCount();
+            toast('✓ Modificaciones de "' + articleName + '" eliminadas');
+            _refreshModListModal();
+        }
+
+        function deleteAllModsForColor(articleName, colorName) {
+            if (!confirm('⚠️ ¿Eliminar las modificaciones de "' + articleName + '" · ' + colorName + '?')) return;
+            Object.keys(state.modifications).forEach(sku => {
+                const mod = state.modifications[sku];
+                const name = mod.product.titulo || mod.product.articulo || 'Sin nombre';
+                const color = mod.product.color || 'Sin color';
+                if (name === articleName && color === colorName) { delete state.modifications[sku]; updateSingleProduct(mod.product.id); }
+            });
+            saveModifications();
+            updateModificationCount();
+            toast('✓ Modificaciones eliminadas');
+            _refreshModListModal();
+        }
+
         function _renderModList(mods) {
-            let html = '';
+            // Agrupar por artículo y, dentro, por color. Cada artículo arranca colapsado (solo
+            // nombre + cantidad + delta); tocar despliega su grilla de talles — la MISMA grilla
+            // y la MISMA barra de abajo (+/-/⊘/=/✓) que se usa al editar un artículo normal:
+            // tocás la celda y listo, sin pasos intermedios. Artículo y color tienen su propio
+            // botón de borrar todo (con confirmación).
+            const groups = {};
             mods.forEach(mod => {
-                const p = mod.product;
-                const sku = p.codigo;
-                const skuId = sku.replace(/[^a-z0-9]/gi, '_');
-                const skuEsc = sku.replace(/'/g, "\\'");
-                const esIgual = mod.tipo === 'igual';
-                const change = mod.newStock - mod.oldStock;
-                const changeStr = (change >= 0 ? '+' : '') + change;
-                const changeCol = change > 0 ? 'var(--success)' : change < 0 ? 'var(--danger)' : 'var(--text-secondary)';
+                const key = mod.product.titulo || mod.product.articulo || 'Sin nombre';
+                (groups[key] = groups[key] || []).push(mod);
+            });
 
-                let ajusteNota = '';
-                if (mod.ajustePreCorte > 0) {
-                    const hora = mod.ajusteCorteHora ? mod.ajusteCorteHora.split('T')[1] : null;
-                    const conteo = mod.stockAntesDeAjuste ?? mod.newStock;
-                    ajusteNota = `<div style="font-size:0.72em;color:var(--warning);margin-top:3px;">📋 Conteo: ${conteo} → −${mod.ajustePreCorte} sin imprimir${hora ? ' (' + hora + ')' : ''}</div>`;
+            let html = '';
+            Object.keys(groups).sort().forEach(articleName => {
+                const group = groups[articleName];
+                let groupDelta = 0;
+                group.forEach(mod => { if (mod.tipo !== 'igual') groupDelta += (mod.newStock - mod.oldStock); });
+                const deltaCol = groupDelta > 0 ? 'var(--success)' : groupDelta < 0 ? 'var(--danger)' : 'var(--text-secondary)';
+                const deltaStr = groupDelta === 0 ? '' : ' · <b style="color:' + deltaCol + '">' + (groupDelta > 0 ? '+' : '') + groupDelta + '</b>';
+                const artEsc = articleName.replace(/'/g, "\\'");
+                const isArticleOpen = modsExpandedArticles.has(articleName);
+
+                html += '<div class="mod-article-group">' +
+                    '<div class="mod-article-header">' +
+                        '<span class="mod-article-name" onclick="toggleModArticle(\'' + artEsc + '\')">' + (isArticleOpen ? '▾' : '▸') + ' ' + articleName + '</span>' +
+                        '<span class="mod-article-right">' +
+                            '<span class="mod-article-count" onclick="toggleModArticle(\'' + artEsc + '\')">' + group.length + (group.length === 1 ? ' var.' : ' vars.') + deltaStr + '</span>' +
+                            '<span class="mod-delete-all" title="Borrar todo el artículo" onclick="event.stopPropagation(); deleteAllModsForArticle(\'' + artEsc + '\')">🗑️</span>' +
+                        '</span>' +
+                    '</div>';
+
+                if (isArticleOpen) {
+                    const colorGroups = {};
+                    group.forEach(mod => {
+                        const c = mod.product.color || 'Sin color';
+                        (colorGroups[c] = colorGroups[c] || []).push(mod);
+                    });
+
+                    Object.keys(colorGroups).sort().forEach(colorName => {
+                        const cGroup = colorGroups[colorName];
+                        const colorEsc = colorName.replace(/'/g, "\\'");
+                        let colorStock = 0;
+                        cGroup.forEach(mod => { colorStock += mod.newStock; });
+
+                        // Ordenar por talle, igual que en la vista de detalle
+                        cGroup.sort((a, b) => {
+                            const sa = a.product.talle || '', sb = b.product.talle || '';
+                            const na = parseFloat(sa), nb = parseFloat(sb);
+                            if (!isNaN(na) && !isNaN(nb)) return na - nb;
+                            const ia = SIZE_ORDER.indexOf(sa.toUpperCase()), ib = SIZE_ORDER.indexOf(sb.toUpperCase());
+                            if (ia > -1 && ib > -1) return ia - ib;
+                            return sa.localeCompare(sb);
+                        });
+
+                        html += '<div class="mod-color-header">' +
+                            '<span>🎨 ' + colorName + ' <span style="color:var(--text-secondary);font-weight:400;">· ' + colorStock + ' uds</span></span>' +
+                            '<span class="mod-delete-all" title="Borrar este color" onclick="deleteAllModsForColor(\'' + artEsc + '\', \'' + colorEsc + '\')">🗑️</span>' +
+                        '</div>';
+
+                        html += '<div class="article-sizes-grid mod-sizes-grid">';
+                        cGroup.forEach(mod => {
+                            const p = mod.product;
+                            const isSelected = articleSelectedId === p.id;
+                            const stockClass = mod.newStock > 5 ? 'high' : mod.newStock > 0 ? 'med' : 'low';
+                            const isZero = mod.newStock <= 0;
+
+                            html += '<div class="article-size-cell modified' +
+                                (isZero ? ' zero' : '') +
+                                (isSelected ? ' selected' : '') +
+                                '" data-pid="' + p.id + '" onclick="articleSelectSize(' + p.id + ')">' +
+                                _deltaBadgeHtml(mod) +
+                                '<div class="asc-size">' + (p.talle || '-') + '</div>' +
+                                '<div class="asc-stock ' + stockClass + '">' + mod.newStock + '</div>' +
+                                '</div>';
+                        });
+                        html += '</div>';
+                    });
                 }
 
-                if (esIgual) {
-                    html += `<div class="mod-item">
-                        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
-                            <div style="flex:1;min-width:0;">
-                                <div class="mod-item-header" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.titulo || p.articulo || '-'}</div>
-                                <div class="mod-item-detail">SKU: ${sku} · ${p.color || '-'} · T.${p.talle || '-'}</div>
-                                <div style="font-size:0.78em;color:var(--primary);margin-top:2px;">= Ecomm ✓ (stock sin cambio)</div>
-                            </div>
-                            <button onclick="removeModification('${skuEsc}', true)"
-                                style="background:var(--danger);border:none;color:white;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:0.85em;min-width:40px;min-height:40px;touch-action:manipulation;flex-shrink:0;">🗑️</button>
-                        </div>
-                    </div>`;
-                } else {
-                    html += `<div class="mod-item">
-                        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
-                            <div style="flex:1;min-width:0;">
-                                <div class="mod-item-header" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.titulo || p.articulo || '-'}</div>
-                                <div class="mod-item-detail">SKU: ${sku} · ${p.color || '-'} · T.${p.talle || '-'}</div>
-                                <div class="mod-item-change" style="margin-top:4px;">
-                                    <span class="mod-old">${mod.oldStock}</span>
-                                    <span>→</span>
-                                    <span class="mod-new">${mod.newStock}</span>
-                                    <span style="color:${changeCol};margin-left:6px;font-weight:700;">(${changeStr})</span>
-                                </div>
-                                ${ajusteNota}
-                            </div>
-                            <button onclick="removeModification('${skuEsc}', true)"
-                                style="background:var(--danger);border:none;color:white;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:0.85em;min-width:40px;min-height:40px;touch-action:manipulation;flex-shrink:0;">🗑️</button>
-                        </div>
-                        <div style="display:flex;align-items:center;gap:5px;margin-top:9px;flex-wrap:wrap;">
-                            <button onclick="listModifyStock('${skuEsc}', -1)"
-                                style="width:38px;height:38px;background:rgba(248,113,113,0.15);border:1px solid var(--danger);color:var(--danger);border-radius:7px;font-weight:900;font-size:1.15em;cursor:pointer;touch-action:manipulation;">−</button>
-                            <button onclick="listModifyStock('${skuEsc}', +1)"
-                                style="width:38px;height:38px;background:rgba(74,222,128,0.15);border:1px solid var(--success);color:var(--success);border-radius:7px;font-weight:900;font-size:1.15em;cursor:pointer;touch-action:manipulation;">+</button>
-                            <input type="number" id="listinp_${skuId}" placeholder="Nuevo valor" min="0"
-                                style="width:96px;padding:7px 8px;background:var(--bg-input);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:0.9em;outline:none;"
-                                onkeydown="if(event.key==='Enter') listSetManual('${skuEsc}')">
-                            <button onclick="listSetManual('${skuEsc}')"
-                                style="padding:7px 13px;background:var(--primary);border:none;color:white;border-radius:7px;font-weight:700;cursor:pointer;font-size:0.88em;touch-action:manipulation;">✓</button>
-                        </div>
-                    </div>`;
-                }
+                html += '</div>';
             });
             return html;
         }
 
-        function listModifyStock(sku, delta) {
-            const mod = state.modifications[sku];
-            if (!mod) return;
-            const newVal = Math.max(0, mod.newStock + delta);
-            if (newVal === mod.oldStock) {
-                delete state.modifications[sku];
-            } else {
-                const updated = { ...mod, newStock: newVal };
-                delete updated.stockAntesDeAjuste;
-                delete updated.ajustePreCorte;
-                delete updated.ajusteCorteHora;
-                state.modifications[sku] = updated;
-            }
-            haptic('light');
-            saveModifications();
-            updateSingleProduct(mod.product.id);
-            updateModificationCount();
-            const mods = Object.values(state.modifications);
-            if (!mods.length) { closeModal(); toast('Lista vacía', 'warning'); return; }
-            $('modalTitle').textContent = 'Modificaciones (' + mods.length + ')';
-            $('modalBody').innerHTML = _renderModList(mods);
-        }
-
-        function listSetManual(sku) {
-            const skuId = sku.replace(/[^a-z0-9]/gi, '_');
-            const inp = document.getElementById('listinp_' + skuId);
-            if (!inp) return;
-            const value = parseInt(inp.value);
-            if (isNaN(value) || value < 0) { toast('⚠️ Ingresá una cantidad válida', 'warning'); inp.focus(); return; }
-            const mod = state.modifications[sku];
-            if (!mod) return;
-            if (value === mod.oldStock) {
-                delete state.modifications[sku];
-            } else {
-                state.modifications[sku] = { oldStock: mod.oldStock, newStock: value, product: mod.product };
-            }
-            haptic('medium');
-            saveModifications();
-            updateSingleProduct(mod.product.id);
-            updateModificationCount();
-            const mods = Object.values(state.modifications);
-            if (!mods.length) { closeModal(); toast('Lista vacía', 'warning'); return; }
-            $('modalTitle').textContent = 'Modificaciones (' + mods.length + ')';
-            $('modalBody').innerHTML = _renderModList(mods);
-            toast('✓ ' + value + ' · ' + (mod.product.color || '') + ' T:' + (mod.product.talle || ''), 'success');
-        }
-
-        function removeModification(sku, noConfirm) {
-            const mod = state.modifications[sku];
-            const productName = mod ? (mod.product.color || '-') + ' T:' + (mod.product.talle || '-') : sku;
-            if (!noConfirm && !confirm('¿Eliminar modificación de ' + productName + '?')) return;
-
-            delete state.modifications[sku];
-            saveModifications();
-            if (mod?.product?.id) updateSingleProduct(mod.product.id);
-            updateModificationCount();
-
-            const modalOpen = $('modalOverlay').classList.contains('show');
-            if (modalOpen) {
-                const mods = Object.values(state.modifications);
-                if (mods.length > 0) {
-                    $('modalTitle').textContent = 'Modificaciones (' + mods.length + ')';
-                    $('modalBody').innerHTML = _renderModList(mods);
-                } else {
-                    closeModal();
-                    toast('Lista vacía', 'warning');
-                }
-            } else {
-                toast('✓ Modificación eliminada');
-            }
-        }
-        
         function generateWhatsAppText() {
             // Los items "igual" (sin cambio de stock real) no se incluyen en el WhatsApp
             const mods = Object.values(state.modifications).filter(m => m.tipo !== 'igual');
@@ -3172,119 +2735,47 @@
         }
         
         function openSettings() {
-            const isDark = state.theme === 'dark';
-            const totalProducts = PRODUCTS.length;
-            const zeroStock = PRODUCTS.filter(p => p.stock === 0).length;
-            const lowStock = PRODUCTS.filter(p => p.stock > 0 && p.stock <= state.lowStockThreshold).length;
-            const modCount = Object.keys(state.modifications).length;
-            const lastSync = localStorage.getItem('mikra_lastSync');
-            const syncAge = lastSync ? Math.floor((Date.now() - new Date(lastSync).getTime()) / 60000) : -1;
-            const syncText = syncAge < 0 ? 'Nunca' : syncAge < 1 ? 'Recién' : 'Hace ' + syncAge + ' min';
-            
             $('modalTitle').textContent = '⚙️ Configuración';
-            $('modalBody').innerHTML = 
-                // COMPACT STATS BAR
-                '<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">' +
-                '<div style="flex:1;text-align:center;padding:8px 4px;background:var(--bg-input);border-radius:8px;border:1px solid var(--border);min-width:70px"><div style="font-weight:800;font-size:1.1em;color:var(--primary)">' + totalProducts.toLocaleString() + '</div><div style="font-size:0.6em;color:var(--text-secondary)">Total</div></div>' +
-                '<div style="flex:1;text-align:center;padding:8px 4px;background:var(--bg-input);border-radius:8px;border:1px solid var(--border);min-width:70px"><div style="font-weight:800;font-size:1.1em;color:var(--danger)">' + zeroStock.toLocaleString() + '</div><div style="font-size:0.6em;color:var(--text-secondary)">Sin stock</div></div>' +
-                '<div style="flex:1;text-align:center;padding:8px 4px;background:var(--bg-input);border-radius:8px;border:1px solid var(--border);min-width:70px"><div style="font-weight:800;font-size:1.1em;color:var(--warning)">' + lowStock + '</div><div style="font-size:0.6em;color:var(--text-secondary)">Bajo</div></div>' +
-                '<div style="flex:1;text-align:center;padding:8px 4px;background:var(--bg-input);border-radius:8px;border:1px solid var(--border);min-width:70px"><div style="font-weight:800;font-size:1.1em;color:var(--purple)">' + modCount + '</div><div style="font-size:0.6em;color:var(--text-secondary)">Modif.</div></div>' +
-                '</div>' +
-                '<div style="text-align:center;font-size:0.68em;color:var(--text-secondary);margin-bottom:14px">🔄 ' + syncText + '</div>' +
-                
-                // SETTINGS TABLE - everything in compact rows
+            $('modalBody').innerHTML =
                 '<table style="width:100%;border-collapse:separate;border-spacing:0 2px;"><colgroup><col><col style="width:90px"></colgroup>' +
-                '<tr><td style="padding:10px 0;font-size:0.85em;">🌙 Modo oscuro</td><td style="text-align:right;padding:10px 0;"><label class="toggle"><input type="checkbox" id="setTheme" ' + (isDark ? 'checked' : '') + ' onchange="toggleTheme()"><span class="toggle-slider"></span></label></td></tr>' +
-                '<tr><td style="padding:10px 0;font-size:0.85em;">📐 Modo compacto</td><td style="text-align:right;padding:10px 0;"><label class="toggle"><input type="checkbox" id="setCompact" ' + (state.compactMode ? 'checked' : '') + ' onchange="toggleCompact()"><span class="toggle-slider"></span></label></td></tr>' +
-                '<tr><td style="padding:10px 0;font-size:0.85em;">📷 Imágenes al iniciar</td><td style="text-align:right;padding:10px 0;"><label class="toggle"><input type="checkbox" id="setImages" ' + (state.defaultImages ? 'checked' : '') + ' onchange="toggleDefaultImages()"><span class="toggle-slider"></span></label></td></tr>' +
                 '<tr><td style="padding:10px 0;font-size:0.85em;">⚠️ Umbral bajo stock</td><td style="text-align:right;padding:10px 0;"><input type="number" class="setting-number" id="setLowStock" value="' + state.lowStockThreshold + '" min="1" max="99"></td></tr>' +
-                '<tr><td style="padding:10px 0;font-size:0.85em;">📄 Por página</td><td style="text-align:right;padding:10px 0;"><select class="setting-select" id="setPageSize">' +
-                '<option value="25"' + (state.pageSize===25?' selected':'') + '>25</option>' +
-                '<option value="50"' + (state.pageSize===50?' selected':'') + '>50</option>' +
-                '<option value="100"' + (state.pageSize===100?' selected':'') + '>100</option>' +
-                '<option value="200"' + (state.pageSize===200?' selected':'') + '>200</option>' +
-                '</select></td></tr>' +
-                '<tr><td style="padding:10px 0;font-size:0.85em;">🏷️ Mostrar SKU/Ubic.</td><td style="text-align:right;padding:10px 0;"><label class="toggle"><input type="checkbox" id="setShowSku" ' + (state.showSku ? 'checked' : '') + ' onchange="state.showSku=this.checked"><span class="toggle-slider"></span></label></td></tr>' +
                 '<tr><td colspan="2" style="padding:10px 0 4px;">' +
                     '<div style="font-size:0.85em;margin-bottom:8px;">🕒 Corte de ventas (Ecomm)</div>' +
                     _renderSettingsCutoff() +
                     '<div style="font-size:0.72em;color:var(--text-secondary);margin-top:6px;">Hora de corte: las ventas sin imprimir anteriores a este valor se cuentan como pendientes al enviar a Ecomm.</div>' +
                 '</td></tr>' +
-                '<tr><td style="padding:10px 0;font-size:0.85em;">🔄 Auto-sync</td><td style="text-align:right;padding:10px 0;"><select class="setting-select" id="setAutoSync">' +
-                '<option value="0"' + (state.autoSyncMin===0?' selected':'') + '>Off</option>' +
-                '<option value="5"' + (state.autoSyncMin===5?' selected':'') + '>5 min</option>' +
-                '<option value="10"' + (state.autoSyncMin===10?' selected':'') + '>10 min</option>' +
-                '<option value="15"' + (state.autoSyncMin===15?' selected':'') + '>15 min</option>' +
-                '<option value="30"' + (state.autoSyncMin===30?' selected':'') + '>30 min</option>' +
-                '</select></td></tr>' +
                 '</table>' +
-                
+
                 // COMPACT ACTIONS
                 '<div style="display:flex;gap:6px;margin-top:14px;">' +
                 '<button onclick="exportModsCSV()" style="flex:1;background:var(--success);color:#1a2744;border:none;padding:10px;border-radius:8px;font-weight:700;font-size:0.8em;cursor:pointer;">📤 CSV</button>' +
                 '<button onclick="forceSync()" style="flex:1;background:var(--primary);color:white;border:none;padding:10px;border-radius:8px;font-weight:700;font-size:0.8em;cursor:pointer;">🔄 Sync</button>' +
                 '<button onclick="clearCache()" style="flex:1;background:var(--danger);color:white;border:none;padding:10px;border-radius:8px;font-weight:700;font-size:0.8em;cursor:pointer;opacity:0.8;">🗑️ Caché</button>' +
                 '</div>' +
-                
+
                 // SAVE
                 '<button onclick="saveAllSettings()" style="width:100%;background:var(--primary);color:white;border:none;padding:12px;border-radius:10px;font-weight:700;font-size:0.95em;cursor:pointer;margin-top:10px;">✓ Guardar</button>';
-            
+
             showModal();
         }
-        
-        function toggleTheme() {
-            state.theme = $('setTheme').checked ? 'dark' : 'light';
-            applyTheme();
-        }
-        
-        function applyTheme() {
-            if (state.theme === 'light') {
-                document.documentElement.setAttribute('data-theme', 'light');
-                document.querySelector('meta[name="theme-color"]').content = '#ffffff';
-            } else {
-                document.documentElement.removeAttribute('data-theme');
-                document.querySelector('meta[name="theme-color"]').content = '#1a2744';
-            }
-        }
-        
-        function toggleCompact() {
-            state.compactMode = $('setCompact').checked;
-            document.body.classList.toggle('compact', state.compactMode);
-        }
-        
-        function toggleDefaultImages() {
-            state.defaultImages = $('setImages').checked;
-        }
-        
+
         function saveAllSettings() {
             // Read values from form
             const lowStock = parseInt($('setLowStock').value);
             if (isNaN(lowStock) || lowStock < 1) { toast('⚠️ Umbral debe ser ≥ 1', 'warning'); return; }
-            
+
             state.lowStockThreshold = lowStock;
-            state.pageSize = parseInt($('setPageSize').value);
-            state.autoSyncMin = parseInt($('setAutoSync').value);
             _syncSettingsCutoff(); // lee date+time separados y actualiza state.ecommCutoff
-            
+
             // Persist
             try {
                 localStorage.setItem('mikra_settings', JSON.stringify({
                     lowStockThreshold: state.lowStockThreshold,
-                    pageSize: state.pageSize,
-                    autoSyncMin: state.autoSyncMin,
-                    theme: state.theme,
-                    compactMode: state.compactMode,
-                    defaultImages: state.defaultImages || false,
-                    showSku: state.showSku || false,
                     ecommCutoff: state.ecommCutoff || ''
                 }));
             } catch(e) {}
-            
-            // Restart auto-sync with new interval
-            setupAutoSync();
-            
+
             closeModal();
-            state.page = 1;
             applyFilters();
             toast('✓ Configuración guardada', 'success');
         }
@@ -3309,7 +2800,7 @@
         
         function forceSync() {
             closeModal();
-            loadData(false);
+            loadData(true); // forzar refetch sin importar la antigüedad de la caché
         }
         
         function clearCache() {
@@ -3319,7 +2810,7 @@
             localStorage.removeItem('mikra_lastSync');
             closeModal();
             toast('✓ Caché borrada — sincronizando...', 'success');
-            loadData(false);
+            loadData(true);
         }
         
         function clearModifications() {
@@ -3375,7 +2866,7 @@
         // === CACHE-FIRST LOADING ===
         // Show cached data INSTANTLY, then sync in background
         
-        const CACHE_MAX_AGE_MS = 5 * 60 * 1000; // 5 minutes — skip API if cache is fresh
+        const CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24h — si la caché es más nueva, no se llama a la API sola
         
         function loadFromCache() {
             try {
@@ -3539,16 +3030,16 @@
         async function loadData(forceSync) {
             // Step 1: Try cache first (instant)
             const hasCache = loadFromCache();
-            
+
             if (hasCache) {
                 // Hide loading screen immediately
                 $('loadingScreen').classList.add('hidden');
                 $('syncDot').classList.remove('loading', 'error');
                 $('syncStatus').textContent = 'Caché';
 
-                // Siempre refrescar en segundo plano (el usuario ya ve la caché).
-                // Antes se saltaba si la caché era "fresca" → por eso "no actualizaba".
-                syncFromAPI(true);
+                // Solo se llama a la API sola si la caché ya tiene más de 24h, o si se forzó
+                // manualmente (botón "Sync" / limpiar caché). Sin timers en segundo plano.
+                if (forceSync || !isCacheFresh()) syncFromAPI(true);
             } else {
                 // No cache — must wait for API (show loading screen)
                 $('loadingText').textContent = 'Cargando inventario...';
@@ -3568,27 +3059,55 @@
             };
         }
         
-        const debouncedFilter = debounce(() => {
-            showAutocomplete(state.search);
-            applyFilters();
-        }, 150);
-        
+        // El filtrado pesado (filtrar + ordenar + render) va con debounce.
+        // El autocompletado es liviano y se actualiza al instante para que el tipeo se sienta fluido.
+        const debouncedFilter = debounce(() => { applyFilters(); }, 200);
+
+        function refreshSuggestions() {
+            if (state.search.length >= 2) showAutocomplete(state.search);
+            else if (state.search.length === 0) showRecentSearches();
+            else $('autocomplete').classList.remove('show');
+        }
+
         $('searchInput').addEventListener('input', e => {
             state.search = e.target.value.trim(); state.searchExact = false; state.colors = []; state.sizes = [];
             $('searchClear').classList.toggle('show', state.search.length > 0);
-            debouncedFilter();
+            refreshSuggestions();   // instantáneo
+            debouncedFilter();      // diferido
         });
-        
-        $('searchInput').addEventListener('focus', () => { if (state.search.length >= 2) showAutocomplete(state.search); });
-        
-        $('autocomplete').addEventListener('click', e => {
-            const item = e.target.closest('.autocomplete-item');
-            if (item) {
-                const name = item.dataset.name;
-                $('searchInput').value = name; state.search = name; state.searchExact = true;
-                forceListView = false;
-                $('searchClear').classList.add('show'); $('autocomplete').classList.remove('show'); applyFilters();
+
+        // Al enfocar: si hay texto, sugerencias; si está vacío, últimas búsquedas
+        $('searchInput').addEventListener('focus', refreshSuggestions);
+
+        // Al confirmar con Enter, guardar como búsqueda reciente y cerrar el teclado.
+        // Si para ese momento ya se auto-promovió a un solo artículo (searchExact), se guarda
+        // como exacta; si sigue siendo texto suelto que matchea varios, se guarda como tal.
+        $('searchInput').addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+                if (state.search.length >= 2) addRecentSearch(state.search, state.searchExact);
+                $('autocomplete').classList.remove('show');
+                $('searchInput').blur();
             }
+        });
+
+        // exact=true para sugerencias / artículo puntual (entra directo al detalle al reusarla);
+        // exact=false para términos sueltos (vuelve a filtrar, puede dar varios resultados)
+        function commitSearch(name, exact) {
+            $('searchInput').value = name; state.search = name; state.searchExact = !!exact;
+            state.colors = []; state.sizes = [];
+            addRecentSearch(name, exact);
+            $('searchClear').classList.add('show'); $('autocomplete').classList.remove('show'); applyFilters();
+        }
+
+        $('autocomplete').addEventListener('click', e => {
+            // Borrar todo el historial
+            if (e.target.closest('[data-clear-recent]')) { e.stopPropagation(); clearRecentSearches(); return; }
+            // Quitar un ítem del historial sin seleccionarlo
+            const rm = e.target.closest('[data-remove]');
+            if (rm) { e.stopPropagation(); removeRecentSearch(rm.dataset.remove); showRecentSearches(); return; }
+            // Seleccionar: sugerencia → siempre exacta; reciente → según cómo se guardó
+            const item = e.target.closest('.autocomplete-item');
+            if (item) commitSearch(item.dataset.name, item.classList.contains('recent') ? item.dataset.exact === '1' : true);
         });
         
         document.addEventListener('click', e => { if (!e.target.closest('.search-container')) $('autocomplete').classList.remove('show'); });
@@ -3633,36 +3152,10 @@
             try {
                 const saved = JSON.parse(localStorage.getItem('mikra_settings') || '{}');
                 if (saved.lowStockThreshold) state.lowStockThreshold = saved.lowStockThreshold;
-                if (saved.pageSize) state.pageSize = saved.pageSize;
-                if (saved.autoSyncMin !== undefined) state.autoSyncMin = saved.autoSyncMin;
-                if (saved.theme) state.theme = saved.theme;
-                if (saved.compactMode) state.compactMode = saved.compactMode;
-                if (saved.defaultImages) { state.defaultImages = true; state.showImages = true; }
-                if (saved.showSku) state.showSku = true;
                 if (saved.ecommCutoff) state.ecommCutoff = saved.ecommCutoff;
             } catch(e) {}
+        }
 
-            // Apply theme immediately
-            applyTheme();
-            document.body.classList.toggle('compact', state.compactMode);
-            if (state.showImages) {
-                $('photosBtn').classList.add('active');
-                $('productList').classList.add('show-images');
-            }
-        }
-        
-        let autoSyncTimer = null;
-        function setupAutoSync() {
-            if (autoSyncTimer) clearInterval(autoSyncTimer);
-            if (state.autoSyncMin > 0) {
-                autoSyncTimer = setInterval(() => {
-                    if (document.visibilityState === 'visible' && navigator.onLine) {
-                        syncFromAPI(true);
-                    }
-                }, state.autoSyncMin * 60 * 1000);
-            }
-        }
-        
         // #15 Reconcile modifications after sync — update product refs, drop stale mods
         function reconcileModifications() {
             const newMods = {};
@@ -3698,9 +3191,6 @@
         if (!navigator.onLine) $('offlineBar').classList.add('show');
         loadData(); // Cache-first: shows cached data instantly, syncs in background
         setTimeout(loadImagesFromAPI, 2000); // Delay image API to prioritize product data
-        
-        // Auto-sync with configurable interval
-        setupAutoSync();
     </script>
     <script>
     // Service Worker — usa sw.js externo
