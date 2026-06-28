@@ -918,6 +918,7 @@
             width: calc(100% - 16px); max-height: 220px; object-fit: contain;
             background: var(--bg-input); display: none; border-radius: 10px;
             margin: 6px auto; cursor: pointer;
+            -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
         }
         .article-detail-view.show-photos .article-color-img { display: block; }
         
@@ -1213,6 +1214,12 @@
         .art-photo-opt.active { border-color:var(--primary); }
         .art-photo-auto { width:46px; height:58px; background:var(--bg-input); border-radius:6px; border:2.5px solid var(--border); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:1.2em; flex-shrink:0; }
         .art-photo-auto.active { border-color:var(--primary); }
+        /* Color photo bottom sheet */
+        .color-photo-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1999; display:none; }
+        .color-photo-overlay.show { display:block; }
+        .color-photo-sheet { position:fixed; bottom:0; left:0; right:0; background:var(--bg-card); border-radius:16px 16px 0 0; padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px)); z-index:2000; transform:translateY(100%); transition:transform 0.25s ease; max-height:70vh; overflow-y:auto; }
+        .color-photo-sheet.show { transform:translateY(0); }
+        .color-photo-sheet-title { font-weight:700; font-size:0.95em; margin-bottom:12px; color:var(--primary); }
         /* Subtle edit button */
         .home-edit-btn { font-size:0.72em; padding:4px 10px; opacity:0.6; }
         .home-edit-btn.listo { opacity:1; }
@@ -1304,6 +1311,18 @@
                 <button class="color-gallery-close" onclick="closeColorGallery()">✕</button>
             </div>
             <div class="color-gallery-grid" id="colorGalleryGrid"></div>
+        </div>
+
+        <div class="color-photo-overlay" id="colorPhotoOverlay" onclick="closeColorPhotoSheet()"></div>
+        <div class="color-photo-sheet" id="colorPhotoSheet">
+            <div class="color-photo-sheet-title" id="colorPhotoTitle">📷 Foto de color</div>
+            <div class="art-photo-picker" id="colorPhotoContent"></div>
+        </div>
+
+        <div class="color-photo-overlay" id="artPhotoOverlay" onclick="closeArtPhotoSheet()"></div>
+        <div class="color-photo-sheet" id="artPhotoSheet">
+            <div class="color-photo-sheet-title" id="artPhotoSheetTitle">📷 Foto</div>
+            <div class="art-photo-picker" style="flex-wrap:wrap;gap:6px;" id="artPhotoPickerContent"></div>
         </div>
 
         <div class="home-dashboard" id="homeDashboard" style="display:none;"></div>
@@ -1471,13 +1490,13 @@
                     if (s.icon) cat.icon = s.icon;
                     if (Array.isArray(s.subcats)) cat.subcats = s.subcats;
                     if (s.articleSubcats && typeof s.articleSubcats === 'object') cat.articleSubcats = s.articleSubcats;
-                    if (Array.isArray(s.children)) cat.children = s.children;
+                    if (Array.isArray(s.children) && saved._v >= 2) cat.children = s.children;
                 });
                 if (saved._articlePhotos && typeof saved._articlePhotos === 'object') homeArticlePhotos = saved._articlePhotos;
             } catch (e) {}
         }
         function saveCategoryOverrides() {
-            const data = { _order: QUICK_ACCESS.map(c => c.cat), _articlePhotos: homeArticlePhotos };
+            const data = { _order: QUICK_ACCESS.map(c => c.cat), _articlePhotos: homeArticlePhotos, _v: 2 };
             QUICK_ACCESS.forEach(cat => {
                 data[cat.cat] = {
                     articles: cat.articles,
@@ -1509,6 +1528,8 @@
             'Calza Dama Termica Sublimada':         'https://http2.mlstatic.com/D_NQ_NP_2X_649232-MLA76956732548_062024-S.jpg',
             'Pantalon Termico Ketten':              'https://http2.mlstatic.com/D_NQ_NP_2X_786900-MLA98391714359_112025-S.jpg',
         };
+        let colorPhotos = (function(){ try { return JSON.parse(localStorage.getItem('mikra_colorPhotos') || '{}'); } catch(e) { return {}; } })();
+        function saveColorPhotos() { try { localStorage.setItem('mikra_colorPhotos', JSON.stringify(colorPhotos)); } catch(e) {} }
         let _editPhotoOpenArt = null; // artículo con foto-picker abierto en panel edición
         let _addingNewCat = false;    // formulario agregar categoría visible
         let bottomBarExpanded = false; // barra inferior expandida
@@ -1599,10 +1620,50 @@
         // error real (por eso onerror nunca se dispara y la foto queda en blanco). Si la imagen
         // que cargó es sospechosamente chica, la tratamos como fallo y pasamos a la siguiente
         // candidata directo (sin gastar los reintentos, que son para errores de red reales).
+        // También detectamos el placeholder de ML (R.gif) que carga como 200 OK pero no es la foto real.
+        let _mlRGifW = -1, _mlRGifH = -1;
+        (function() {
+            const t = new Image();
+            t.onload = function() { _mlRGifW = t.naturalWidth; _mlRGifH = t.naturalHeight; };
+            t.src = 'https://http2.mlstatic.com/resources/frontend/statics/img-not-available/1.1.0/R.gif';
+        })();
+
         function imgVerifyLoaded(img, placeholderClass, placeholderIcon) {
-            if (img.naturalWidth >= 50) return;
-            img.dataset.usedFallback = '1';
-            imgRetryOrFallback(img, placeholderClass, placeholderIcon);
+            const w = img.naturalWidth, h = img.naturalHeight;
+            if (w < 50 || h < 50) {
+                img.dataset.usedFallback = '1';
+                imgRetryOrFallback(img, placeholderClass, placeholderIcon);
+                return;
+            }
+            // Detectar R.gif de ML por dimensiones o por fetch
+            if (_mlRGifW > 0 && w === _mlRGifW && h === _mlRGifH) {
+                img.dataset.usedFallback = '1';
+                imgRetryOrFallback(img, placeholderClass, placeholderIcon);
+                return;
+            }
+            const src = img.src;
+            if (src && src.startsWith('http')) {
+                fetch(src, { referrerPolicy: 'no-referrer' })
+                    .then(function(r) {
+                        if (r.url && r.url.includes('not-available')) {
+                            img.dataset.usedFallback = '1';
+                            imgRetryOrFallback(img, placeholderClass, placeholderIcon);
+                        }
+                    })
+                    .catch(function() {});
+            }
+        }
+
+        function imgHideIfNotAvailable(img) {
+            const w = img.naturalWidth, h = img.naturalHeight;
+            if (img.currentSrc && img.currentSrc.includes('not-available')) { img.style.display = 'none'; return; }
+            if (w < 20 || h < 20) { img.style.display = 'none'; return; }
+            if (_mlRGifW > 0 && w === _mlRGifW && h === _mlRGifH) { img.style.display = 'none'; return; }
+            const src = img.src;
+            if (!src || !src.startsWith('http')) return;
+            fetch(src, { referrerPolicy: 'no-referrer' })
+                .then(function(r) { if (r.url && r.url.includes('not-available')) img.style.display = 'none'; })
+                .catch(function() {});
         }
 
         function getProductImage(codigo, product) {
@@ -2835,6 +2896,95 @@
             renderHomeCatEditPanel();
         }
 
+        // ===== LONG-PRESS EN TILE DE ARTÍCULO → ELEGIR FOTO (igual que Pedidos.html) =====
+        let _artLpTimer = null, _artLpFired = false;
+        function artLongPressStart(name) {
+            _artLpFired = false;
+            _artLpTimer = setTimeout(function() { _artLpTimer = null; _artLpFired = true; openArticlePhotoSheet(name); }, 550);
+        }
+        function artLongPressEnd() { if (_artLpTimer) { clearTimeout(_artLpTimer); _artLpTimer = null; } }
+        function artTileClick(e, name) {
+            if (_artLpFired) { e.preventDefault(); e.stopPropagation(); _artLpFired = false; return; }
+            openArticleFromHome(name);
+        }
+        function openArticlePhotoSheet(artName) {
+            const candidates = getArticleImageCandidates(artName);
+            const current = homeArticlePhotos[artName] || '';
+            const safeArt = artName.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+            let html = '<div class="art-photo-auto' + (!current ? ' active' : '') + '" onclick="setArtPhotoFromSheet(\'' + safeArt + '\',null)">↩️</div>';
+            candidates.forEach(function(url) {
+                html += '<img class="art-photo-opt' + (current === url ? ' active' : '') + '" src="' + url + '" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display=\'none\'" onload="imgHideIfNotAvailable(this)" onclick="setArtPhotoFromSheet(\'' + safeArt + '\',\'' + url.replace(/'/g,"\\'") + '\')">';
+            });
+            if (!candidates.length) html += '<div style="color:var(--text-secondary);font-size:0.85em;padding:8px 0;">Sin fotos — sincronizá primero.</div>';
+            $('artPhotoPickerContent').innerHTML = html;
+            $('artPhotoSheetTitle').textContent = '📷 ' + artName;
+            $('artPhotoOverlay').classList.add('show');
+            $('artPhotoSheet').classList.add('show');
+        }
+        function closeArtPhotoSheet() { $('artPhotoOverlay').classList.remove('show'); $('artPhotoSheet').classList.remove('show'); }
+        function setArtPhotoFromSheet(artName, url) {
+            if (url) homeArticlePhotos[artName] = url;
+            else delete homeArticlePhotos[artName];
+            saveCategoryOverrides();
+            closeArtPhotoSheet();
+            renderHomeScreen();
+        }
+
+        // ===== COLOR PHOTO LONG-PRESS =====
+        let _colorLpTimer = null, _colorLpFired = false;
+
+        function getColorImageCandidates(artName, color) {
+            const lower = artName.toLowerCase();
+            const seen = new Set(), urls = [];
+            for (const p of PRODUCTS) {
+                if ((p.titulo || p.articulo || '').toLowerCase() !== lower) continue;
+                if ((p.color || 'Sin color') !== color) continue;
+                const url = getProductImageFull(p.codigo, p);
+                if (url && !seen.has(url)) { seen.add(url); urls.push(url); }
+            }
+            return urls;
+        }
+
+        function colorLpStart(e, artName, color) {
+            _colorLpFired = false;
+            _colorLpTimer = setTimeout(function() {
+                _colorLpTimer = null; _colorLpFired = true;
+                openColorPhotoSheet(artName, color);
+            }, 550);
+        }
+        function colorLpEnd() { if (_colorLpTimer) { clearTimeout(_colorLpTimer); _colorLpTimer = null; } }
+        function colorImgClick(e, codigo, id) {
+            if (_colorLpFired) { e.preventDefault(); e.stopPropagation(); _colorLpFired = false; return; }
+            showImgModal(codigo, id);
+        }
+
+        function openColorPhotoSheet(artName, color) {
+            const key = artName + '|||' + color;
+            const candidates = getColorImageCandidates(artName, color);
+            const current = colorPhotos[key] || '';
+            const escQ = function(s) { return String(s).replace(/'/g, "\\'"); };
+            let html = '<div class="art-photo-auto' + (!current ? ' active' : '') + '" onclick="setColorPhoto(\'' + escQ(key) + '\',null)" title="Automático">↩️</div>';
+            candidates.forEach(function(url) {
+                html += '<img class="art-photo-opt' + (current === url ? ' active' : '') + '" src="' + url + '" referrerpolicy="no-referrer" loading="lazy" onerror="this.style.display=\'none\'" onload="imgHideIfNotAvailable(this)" onclick="setColorPhoto(\'' + escQ(key) + '\',\'' + url.replace(/'/g, "\\'") + '\')">';
+            });
+            if (!candidates.length) html += '<div style="font-size:0.85em;color:var(--text-secondary);padding:8px 0;">Sin fotos disponibles.</div>';
+            $('colorPhotoContent').innerHTML = html;
+            $('colorPhotoTitle').textContent = '📷 ' + artName + ' — ' + color;
+            $('colorPhotoOverlay').classList.add('show');
+            $('colorPhotoSheet').classList.add('show');
+        }
+        function closeColorPhotoSheet() {
+            $('colorPhotoOverlay').classList.remove('show');
+            $('colorPhotoSheet').classList.remove('show');
+        }
+        function setColorPhoto(key, url) {
+            if (url) colorPhotos[key] = url;
+            else delete colorPhotos[key];
+            saveColorPhotos();
+            closeColorPhotoSheet();
+            renderArticleDetail();
+        }
+
         // ── Bottom bar ──
         function toggleBottomBar() {
             bottomBarExpanded = !bottomBarExpanded;
@@ -3245,7 +3395,7 @@
                     const stockHtml = stock !== null
                         ? '<span class="home-art-stock' + (stock <= 0 ? ' zero' : '') + '">' + stock + ' uds</span>'
                         : '<span class="home-art-stock" style="color:var(--text-secondary);background:none;">sin datos</span>';
-                    html += '<button class="home-article-btn" onclick="openArticleFromHome(\'' + esc(artName) + '\')">' +
+                    html += '<button class="home-article-btn" onpointerdown="artLongPressStart(\'' + esc(artName) + '\')" onpointerup="artLongPressEnd()" onpointercancel="artLongPressEnd()" onclick="artTileClick(event,\'' + esc(artName) + '\')">' +
                         imgHtml +
                         '<span class="home-art-info"><span class="home-art-name">' + artName + '</span><br>' + stockHtml + '</span>' +
                         '<span class="home-art-chevron">›</span>' +
@@ -3306,7 +3456,7 @@
                     : '<div class="home-art-img-placeholder">📦</div>';
                 const st = a.totalStock;
                 const stockHtml = '<span class="home-art-stock' + (st <= 0 ? ' zero' : '') + '">' + st + ' uds</span>';
-                return '<button class="home-article-btn" onclick="openArticleFromHome(\'' + esc(a.name) + '\')">' +
+                return '<button class="home-article-btn" onpointerdown="artLongPressStart(\'' + esc(a.name) + '\')" onpointerup="artLongPressEnd()" onpointercancel="artLongPressEnd()" onclick="artTileClick(event,\'' + esc(a.name) + '\')">' +
                     imgHtml +
                     '<span class="home-art-info"><span class="home-art-name">' + a.name + '</span><br>' + stockHtml + '</span>' +
                     '<span class="home-art-chevron">›</span></button>';
@@ -3613,9 +3763,17 @@
                     html += '<div class="article-color-sticky">🎨 ' + color +
                         '<span class="color-stock-badge">' + colorStock + ' uds</span></div>';
 
-                    // Color image
-                    if (colorImgUrl) {
-                        html += '<img class="article-color-img" src="' + colorImgUrl + '" onclick="showImgModal(\'' + prods[0].codigo + '\',' + prods[0].id + ')" onerror="this.remove()">';
+                    // Color image (override manual o el de IMAGES_MAP)
+                    const _cpKey = articleName + '|||' + color;
+                    const _cpEsc = function(s) { return String(s).replace(/'/g, "\\'"); };
+                    const displayUrl = colorPhotos[_cpKey] || colorImgUrl;
+                    if (displayUrl) {
+                        html += '<img class="article-color-img" src="' + displayUrl + '" ' +
+                            'oncontextmenu="return false" ondragstart="return false" ' +
+                            'onpointerdown="colorLpStart(event,\'' + _cpEsc(articleName) + '\',\'' + _cpEsc(color) + '\')" ' +
+                            'onpointerup="colorLpEnd()" onpointercancel="colorLpEnd()" ' +
+                            'onclick="colorImgClick(event,\'' + prods[0].codigo + '\',' + prods[0].id + ')" ' +
+                            'onerror="this.remove()" onload="imgHideIfNotAvailable(this)">';
                     }
 
                     // Sizes grid - iterate ALL sizes so columns align across colors
