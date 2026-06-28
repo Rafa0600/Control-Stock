@@ -1008,7 +1008,8 @@
         .asc-stock.high { color: var(--success); }
         .asc-stock.med { color: var(--warning); }
         .asc-stock.low { color: var(--danger); }
-        
+        .asc-ecom { font-size: 0.55em; font-weight: 800; margin-top: 3px; line-height: 1; padding: 1px 3px; border-radius: 3px; background: rgba(255,255,255,0.07); }
+
         .article-edit-bar {
             position: fixed; bottom: 0; left: 0; right: 0;
             background: var(--bg-card); border-top: 2px solid var(--primary);
@@ -1114,6 +1115,8 @@
             font-weight: 700; cursor: pointer; -webkit-tap-highlight-color: transparent;
         }
         .home-back-btn:active { background: var(--bg-input); }
+        .home-edit-inline-btn { margin-left:auto; flex-shrink:0; background:none; border:1px solid var(--border); border-radius:20px; padding:5px 11px; font-size:0.82em; cursor:pointer; color:var(--text-secondary); }
+        .home-edit-inline-btn:active { background:var(--bg-input); }
         .home-cat-title { font-size: 1.05em; font-weight: 800; color: var(--primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
         /* Subcategorías navegables (hijos de categoría) */
         .home-child-tiles { display:flex; gap:8px; overflow-x:auto; padding:2px 0 10px; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
@@ -1127,6 +1130,8 @@
         /* Edit panel - filas de hijos */
         .home-edit-child-row { display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid var(--border); cursor:pointer; -webkit-tap-highlight-color:transparent; }
         .home-edit-child-row:last-child { border-bottom:none; }
+        .home-edit-child-row.drag-over { background:rgba(79,172,254,0.1); border-radius:6px; }
+        .home-edit-child-row.dragging { opacity:0.3; }
         .home-edit-child-thumb { width:42px; height:42px; border-radius:7px; object-fit:cover; flex-shrink:0; background:var(--bg-input); }
         .home-edit-child-thumb-ph { width:42px; height:42px; border-radius:7px; background:var(--bg-input); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:1.2em; }
         .home-edit-child-info { flex:1; min-width:0; }
@@ -1382,39 +1387,59 @@
         const QUICK_ACCESS = [
             {
                 icon: '👨', cat: 'Hombre',
-                articles: [
-                    'Remera Termica Hombre',
-                    'Remera Dep. SET Hombre',
-                    'Short Dep. SET Hombre',
-                ]
+                img: 'https://http2.mlstatic.com/D_NQ_NP_2X_795975-MLA107396233542_032026-S.jpg',
+                articles: ['Remera Termica Hombre','Remera Dep. SET Hombre','Short Dep. SET Hombre'],
+                subcats: [], articleSubcats: {}, children: []
             },
             {
                 icon: '👩', cat: 'Dama',
-                articles: [
-                    'Remera Termica Dama',
-                    'Polera Termica Dama',
-                    'Pollera Lycra Adidas Evase',
-                    'Pollera Barbie Evase',
-                    'Pollera Lycra Adidas Recta',
-                    'Pollera Barbie Tablas',
-                    'Calza Dama Oxford -Adidas-',
-                    'Blazer Paño',
-                    'Top Lycra',
-                    'Top + Short Lycra Estampado',
-                    'Pollera Bengalina Pinzas NEW',
-                    'Pollera EcoCuero Evase - Rodilla',
-                    'Campera Lycra Dama',
+                img: null,
+                articles: ['Remera Termica Dama','Polera Termica Dama','Calza Dama Oxford -Adidas-','Blazer Paño','Campera Lycra Dama','Remera Dama Jersey V'],
+                subcats: [],
+                articleSubcats: {'Polera Termica Dama':[],'Remera Termica Dama':[],'Campera Lycra Dama':[],'Blazer Paño':[]},
+                children: [
+                    {
+                        name: 'Polleras', img: null,
+                        articles: ['Pollera Morley Aro','Pollera Lanilla Brush','Pollera Cey 3 Tiempos','Pollera Bengalina Pinzas NEW','Pollera EcoCuero Evase - Corta','Pollera EcoCuero Evase - Rodilla','Pollera EcoCuero Evase Larga - Midi','Pollera EcoCuero Mini S/cierre','Pollera EcoCuero Rodilla S/cierre','Pollera Lycra Adidas Recta','Pollera Lycra Adidas Evase'],
+                        subcats: ['Cuerina','Adidas'],
+                        articleSubcats: {
+                            'Pollera EcoCuero Rodilla S/cierre':['Cuerina'],
+                            'Pollera EcoCuero Evase - Rodilla':['Cuerina'],
+                            'Pollera EcoCuero Mini S/cierre':['Cuerina'],
+                            'Pollera EcoCuero Evase - Corta':['Cuerina'],
+                            'Pollera EcoCuero Evase Larga - Midi':['Cuerina'],
+                            'Pollera Lycra Adidas Recta':['Adidas'],
+                            'Pollera Lycra Adidas Evase':['Adidas']
+                        },
+                        children: []
+                    },
+                    {
+                        name: 'Calzas',
+                        img: 'https://http2.mlstatic.com/D_NQ_NP_2X_703295-MLA95491184269_102025-S.jpg',
+                        articles: ['Calza Dama Oxford -Adidas-','Calza Dama Oxford -Lisa-','Calza Termica Oxford','Calza Dama Sublimada','Calza Dama Lisa','Calza Dama Termica Sublimada','Calza Dama Termica Lisa'],
+                        subcats: ['Termica','Oxford'],
+                        articleSubcats: {
+                            'Calza Dama Termica Sublimada':['Termica'],
+                            'Calza Dama Termica Lisa':['Termica'],
+                            'Calza Dama Oxford -Adidas-':['Oxford'],
+                            'Calza Dama Oxford -Lisa-':['Oxford'],
+                            'Calza Termica Oxford':['Oxford']
+                        },
+                        children: []
+                    },
+                    {
+                        name: 'Verano',
+                        img: 'https://http2.mlstatic.com/D_NQ_NP_2X_961084-MLA99992414298_122025-S.jpg',
+                        articles: ['Top Lycra','Top Alg - Lycra','Top + Short Lycra Estampado','Short Pollera Lycra','Top Lycra Especiales','Top Lycra Tiritas','Top Tiritas Alg - Lycra'],
+                        subcats: [], articleSubcats: {}, children: []
+                    }
                 ]
             },
             {
                 icon: '🧒', cat: 'Niño/a',
-                articles: [
-                    'Polera Termica Niño/a',
-                    'Remera Termica Niño/a',
-                    'Calza Niña Termica Lisa',
-                    'Pantalon Termico Ketten',
-                    'Conjunto Deportivo SET Niños',
-                ]
+                img: null,
+                articles: ['Polera Termica Niño/a','Remera Termica Niño/a','Calza Niña Termica Lisa','Pantalon Termico Ketten','Conjunto Deportivo SET Niños'],
+                subcats: [], articleSubcats: {}, children: []
             },
         ];
 
@@ -1473,11 +1498,22 @@
         let homeEditingCatName = null; // categoría abierta en el panel de edición
         let homeCatSubcat = null;      // subcategoría activa al ver una categoría
         let homeCatChild = null;       // hijo de categoría activo (string nombre) o null
+        let homeCatGrandchild = null;  // sub-hijo activo (nivel 3)
         let homeEditingChildName = null; // hijo en edición dentro del panel
-        let homeArticlePhotos = {};   // foto elegida por artículo en home { artName: url }
+        let homeEditingGrandchildName = null; // sub-hijo en edición
+        let homeArticlePhotos = {      // foto elegida por artículo en home { artName: url }
+            'Calza Niña Termica Lisa':              'https://http2.mlstatic.com/D_NQ_NP_2X_832164-MLA110187392590_052026-S.jpg',
+            'Pollera EcoCuero Evase - Rodilla':     'https://http2.mlstatic.com/D_NQ_NP_2X_724811-MLA89369470818_082025-S.jpg',
+            'Remera Dep. SET Hombre':               'https://http2.mlstatic.com/D_NQ_NP_2X_908525-MLA109854464306_042026-S.jpg',
+            'Short Dep. SET Hombre':                'https://http2.mlstatic.com/D_NQ_NP_2X_973717-MLA100846174123_122025-S.jpg',
+            'Calza Dama Termica Sublimada':         'https://http2.mlstatic.com/D_NQ_NP_2X_649232-MLA76956732548_062024-S.jpg',
+            'Pantalon Termico Ketten':              'https://http2.mlstatic.com/D_NQ_NP_2X_786900-MLA98391714359_112025-S.jpg',
+        };
         let _editPhotoOpenArt = null; // artículo con foto-picker abierto en panel edición
         let _addingNewCat = false;    // formulario agregar categoría visible
         let bottomBarExpanded = false; // barra inferior expandida
+        let artEcomStock = {};         // { sku: stock_ecom } para el artículo abierto
+        let _prevHomeState = null;     // { catSelected, catChild, catSubcat } guardado al abrir artículo desde home
 
         const state = {
             search: '',
@@ -2069,26 +2105,42 @@
         }
 
         function goHome() {
+            closeCatEditSheet();
             homeMode = true;
-            homeCatSelected = null;
+            homeCatSelected = null; homeCatChild = null; homeCatGrandchild = null; homeCatSubcat = null;
             state.search = ''; state.searchExact = false; state.colors = []; state.sizes = [];
             $('searchInput').value = '';
             $('searchClear').classList.remove('show');
             $('autocomplete').classList.remove('show');
-            articleCloseEditBar(); // si quedaba una edición abierta, cerrarla también
+            articleCloseEditBar();
+            history.replaceState({ app: 'mikra', level: 'root' }, '');
             renderHomeScreen();
             window.scrollTo({ top: 0 });
         }
-        function selectHomeCat(catName) { homeCatSelected = catName; homeCatSubcat = null; homeCatChild = null; renderHomeScreen(); window.scrollTo({ top: 0 }); }
-        function goHomeLevel1() { homeCatSelected = null; homeCatSubcat = null; homeCatChild = null; renderHomeScreen(); window.scrollTo({ top: 0 }); }
-        function setHomeCatChild(name) { homeCatChild = name; homeCatSubcat = null; renderHomeScreen(); window.scrollTo({ top: 0 }); }
+        function selectHomeCat(catName) {
+            homeCatSelected = catName; homeCatSubcat = null; homeCatChild = null; homeCatGrandchild = null;
+            history.pushState({ app: 'mikra', level: 'cat' }, '');
+            renderHomeScreen(); window.scrollTo({ top: 0 });
+        }
+        function goHomeLevel1() { homeCatSelected = null; homeCatSubcat = null; homeCatChild = null; homeCatGrandchild = null; renderHomeScreen(); window.scrollTo({ top: 0 }); }
+        function setHomeCatChild(name) {
+            if (name) history.pushState({ app: 'mikra', level: 'child' }, '');
+            homeCatChild = name; homeCatGrandchild = null; homeCatSubcat = null;
+            renderHomeScreen(); window.scrollTo({ top: 0 });
+        }
+        function setHomeCatGrandchild(name) {
+            if (name) history.pushState({ app: 'mikra', level: 'grandchild' }, '');
+            homeCatGrandchild = name; homeCatSubcat = null;
+            renderHomeScreen(); window.scrollTo({ top: 0 });
+        }
 
         // Tocar un artículo del Inicio → abre su vista de edición (igual que buscarlo exacto)
         function openArticleFromHome(name) {
-            // Si ya estábamos fuera del Inicio (viniendo de una búsqueda con varios resultados),
-            // guardar también como búsqueda reciente al elegir la tarjeta — exact:true porque
-            // ya es un artículo puntual, así que al volver a tocarla entra directo a su detalle.
             if (!homeMode) addRecentSearch(name, true);
+            if (homeMode) {
+                history.pushState({ app: 'mikra', level: 'article' }, '');
+                _prevHomeState = { catSelected: homeCatSelected, catChild: homeCatChild, catGrandchild: homeCatGrandchild, catSubcat: homeCatSubcat };
+            }
             homeMode = false;
             $('searchInput').value = name;
             state.search = name; state.searchExact = true; state.colors = []; state.sizes = [];
@@ -2134,11 +2186,10 @@
             if (!cat || cat.articles.includes(artName)) return;
             cat.articles.push(artName);
             saveCategoryOverrides();
+            const prevQ = (document.getElementById('homeCatEditSearch') || {}).value || '';
             renderHomeCatEditPanel();
             const inp = document.getElementById('homeCatEditSearch');
-            const box = document.getElementById('homeCatEditSuggest');
-            if (inp) inp.value = '';
-            if (box) { box.innerHTML = ''; box.style.display = 'none'; }
+            if (inp && prevQ) { inp.value = prevQ; _renderEditSuggest('homeCatEditSearch', 'homeCatEditSuggest'); inp.focus(); }
         }
 
         function _renderEditSuggest(inpId, boxId) {
@@ -2149,16 +2200,21 @@
             const cat = QUICK_ACCESS.find(c => c.cat === homeEditingCatName);
             if (!cat || q.length < 2) { box.innerHTML = ''; box.style.display = 'none'; return; }
             const child = homeEditingChildName && (cat.children || []).find(c => c.name === homeEditingChildName);
-            if (homeEditingChildName && !child) { box.innerHTML = ''; box.style.display = 'none'; return; }
-            const articles = child ? child.articles : cat.articles;
+            const gc = child && homeEditingGrandchildName && (child.children || []).find(c => c.name === homeEditingGrandchildName);
+            const articles = gc ? (gc.articles || []) : child ? child.articles : cat.articles;
             const already = new Set(articles.map(a => a.toLowerCase()));
             const matches = UNIQUE_ARTICLES.filter(a => a._nameLower.includes(q) && !already.has(a._nameLower)).sort((a, b) => b.totalStock - a.totalStock).slice(0, 8);
             if (!matches.length) { box.innerHTML = ''; box.style.display = 'none'; return; }
             const catEsc = homeEditingCatName.replace(/'/g, "\\'");
             const childEsc = child ? homeEditingChildName.replace(/'/g, "\\'") : null;
+            const gcEsc = gc ? homeEditingGrandchildName.replace(/'/g, "\\'") : null;
             box.innerHTML = matches.map(a => {
                 const artEsc = a.name.replace(/'/g, "\\'");
-                const cb = child ? 'catAddArticleToChild(\'' + catEsc + '\',\'' + childEsc + '\',\'' + artEsc + '\')' : 'catAddArticleFromEdit(\'' + catEsc + '\',\'' + artEsc + '\')';
+                const cb = gc
+                    ? 'catAddArticleToGrandchild(\'' + catEsc + '\',\'' + childEsc + '\',\'' + gcEsc + '\',\'' + artEsc + '\')'
+                    : child
+                        ? 'catAddArticleToChild(\'' + catEsc + '\',\'' + childEsc + '\',\'' + artEsc + '\')'
+                        : 'catAddArticleFromEdit(\'' + catEsc + '\',\'' + artEsc + '\')';
                 return '<div class="home-edit-suggest-item" onclick="' + cb + '">+ ' + a.name + '<span style="margin-left:6px;color:var(--text-secondary);font-size:0.82em;">(' + a.totalStock + ')</span></div>';
             }).join('');
             box.style.display = 'block';
@@ -2218,9 +2274,193 @@
             renderHomeScreen();
         }
 
+        function catAddChildSubcat(catName, childName) {
+            const inp = document.getElementById('homeCatChildNewSubcat');
+            if (!inp) return;
+            const name = inp.value.trim();
+            if (!name) return;
+            const cat = QUICK_ACCESS.find(c => c.cat === catName);
+            const child = cat && (cat.children || []).find(c => c.name === childName);
+            if (!child) return;
+            if (!child.subcats) child.subcats = [];
+            if (!child.subcats.includes(name)) { child.subcats.push(name); saveCategoryOverrides(); }
+            inp.value = '';
+            renderHomeCatEditPanel();
+        }
+
+        function catRemoveChildSubcat(catName, childName, subcatName) {
+            const cat = QUICK_ACCESS.find(c => c.cat === catName);
+            const child = cat && (cat.children || []).find(c => c.name === childName);
+            if (!child) return;
+            child.subcats = (child.subcats || []).filter(s => s !== subcatName);
+            if (child.articleSubcats) {
+                Object.keys(child.articleSubcats).forEach(a => {
+                    if (Array.isArray(child.articleSubcats[a]))
+                        child.articleSubcats[a] = child.articleSubcats[a].filter(s => s !== subcatName);
+                });
+            }
+            saveCategoryOverrides();
+            renderHomeCatEditPanel();
+        }
+
+        function catToggleChildArticleSubcat(catName, childName, artName, subcatName) {
+            const cat = QUICK_ACCESS.find(c => c.cat === catName);
+            const child = cat && (cat.children || []).find(c => c.name === childName);
+            if (!child) return;
+            if (!child.articleSubcats) child.articleSubcats = {};
+            if (!child.articleSubcats[artName]) child.articleSubcats[artName] = [];
+            const arr = child.articleSubcats[artName];
+            const i = arr.indexOf(subcatName);
+            if (i < 0) arr.push(subcatName); else arr.splice(i, 1);
+            saveCategoryOverrides();
+            renderHomeCatEditPanel();
+        }
+
+        // ── Grandchild (sub-subcategoría, nivel 3) ──
+        function openHomeCatGrandchildEdit(gcName) {
+            homeEditingGrandchildName = homeEditingGrandchildName === gcName ? null : gcName;
+            _editPhotoOpenArt = null;
+            renderHomeCatEditPanel();
+        }
+        function catAddGrandchild(catName, childName) {
+            const inp = document.getElementById('homeCatChildNewGc');
+            if (!inp) return;
+            const name = inp.value.trim();
+            if (!name) return;
+            const cat = QUICK_ACCESS.find(c => c.cat === catName);
+            const child = cat && (cat.children || []).find(c => c.name === childName);
+            if (!child) return;
+            if (!child.children) child.children = [];
+            if (!child.children.find(c => c.name === name)) {
+                child.children.push({ name, articles: [], img: null });
+                saveCategoryOverrides();
+            }
+            inp.value = '';
+            renderHomeCatEditPanel();
+        }
+        function catRemoveGrandchild(catName, childName, gcName) {
+            const cat = QUICK_ACCESS.find(c => c.cat === catName);
+            const child = cat && (cat.children || []).find(c => c.name === childName);
+            if (!child) return;
+            child.children = (child.children || []).filter(c => c.name !== gcName);
+            if (homeEditingGrandchildName === gcName) homeEditingGrandchildName = null;
+            saveCategoryOverrides();
+            renderHomeCatEditPanel();
+        }
+        function catAddArticleToGrandchild(catName, childName, gcName, artName) {
+            const cat = QUICK_ACCESS.find(c => c.cat === catName);
+            const child = cat && (cat.children || []).find(c => c.name === childName);
+            const gc = child && (child.children || []).find(c => c.name === gcName);
+            if (!gc || (gc.articles || []).includes(artName)) return;
+            if (!gc.articles) gc.articles = [];
+            gc.articles.push(artName);
+            saveCategoryOverrides();
+            const prevQ = (document.getElementById('homeCatGcSearch') || {}).value || '';
+            renderHomeCatEditPanel();
+            const inp = document.getElementById('homeCatGcSearch');
+            if (inp && prevQ) { inp.value = prevQ; _renderEditSuggest('homeCatGcSearch', 'homeCatGcSuggest'); inp.focus(); }
+        }
+        function catRemoveArticleFromGrandchild(catName, childName, gcName, artName) {
+            const cat = QUICK_ACCESS.find(c => c.cat === catName);
+            const child = cat && (cat.children || []).find(c => c.name === childName);
+            const gc = child && (child.children || []).find(c => c.name === gcName);
+            if (!gc) return;
+            gc.articles = (gc.articles || []).filter(a => a !== artName);
+            if (gc.articleSubcats) delete gc.articleSubcats[artName];
+            saveCategoryOverrides();
+            renderHomeCatEditPanel();
+        }
+        function catSetGrandchildPhoto(catName, childName, gcName, url) {
+            const cat = QUICK_ACCESS.find(c => c.cat === catName);
+            const child = cat && (cat.children || []).find(c => c.name === childName);
+            const gc = child && (child.children || []).find(c => c.name === gcName);
+            if (!gc) return;
+            gc.img = url;
+            saveCategoryOverrides();
+            renderHomeCatEditPanel();
+        }
+        function catAddGrandchildSubcat(catName, childName, gcName) {
+            const inp = document.getElementById('homeCatGcNewSubcat');
+            if (!inp) return;
+            const name = inp.value.trim();
+            if (!name) return;
+            const cat = QUICK_ACCESS.find(c => c.cat === catName);
+            const child = cat && (cat.children || []).find(c => c.name === childName);
+            const gc = child && (child.children || []).find(c => c.name === gcName);
+            if (!gc) return;
+            if (!gc.subcats) gc.subcats = [];
+            if (!gc.subcats.includes(name)) { gc.subcats.push(name); saveCategoryOverrides(); }
+            inp.value = '';
+            renderHomeCatEditPanel();
+        }
+        function catRemoveGrandchildSubcat(catName, childName, gcName, subcatName) {
+            const cat = QUICK_ACCESS.find(c => c.cat === catName);
+            const child = cat && (cat.children || []).find(c => c.name === childName);
+            const gc = child && (child.children || []).find(c => c.name === gcName);
+            if (!gc) return;
+            gc.subcats = (gc.subcats || []).filter(s => s !== subcatName);
+            if (gc.articleSubcats) {
+                Object.keys(gc.articleSubcats).forEach(a => {
+                    if (Array.isArray(gc.articleSubcats[a]))
+                        gc.articleSubcats[a] = gc.articleSubcats[a].filter(s => s !== subcatName);
+                });
+            }
+            saveCategoryOverrides();
+            renderHomeCatEditPanel();
+        }
+        function catToggleGrandchildArticleSubcat(catName, childName, gcName, artName, subcatName) {
+            const cat = QUICK_ACCESS.find(c => c.cat === catName);
+            const child = cat && (cat.children || []).find(c => c.name === childName);
+            const gc = child && (child.children || []).find(c => c.name === gcName);
+            if (!gc) return;
+            if (!gc.articleSubcats) gc.articleSubcats = {};
+            if (!gc.articleSubcats[artName]) gc.articleSubcats[artName] = [];
+            const arr = gc.articleSubcats[artName];
+            const i = arr.indexOf(subcatName);
+            if (i < 0) arr.push(subcatName); else arr.splice(i, 1);
+            saveCategoryOverrides();
+            renderHomeCatEditPanel();
+        }
+        function renderHomeCatGcEditSuggest() { _renderEditSuggest('homeCatGcSearch', 'homeCatGcSuggest'); }
+
+        // ── Overlay hoja de edición (accesible desde dentro de una categoría) ──
+        function openCatEditSheet(catName, childName, gcName) {
+            homeEditingCatName = catName;
+            homeEditingChildName = childName || null;
+            homeEditingGrandchildName = gcName || null;
+            _editPhotoOpenArt = null;
+            let el = document.getElementById('_catEditSheet');
+            if (!el) {
+                el = document.createElement('div');
+                el.id = '_catEditSheet';
+                el.style.cssText = 'position:fixed;inset:0;z-index:2000;display:flex;flex-direction:column;justify-content:flex-end;background:rgba(0,0,0,0.48);';
+                const wrap = document.createElement('div');
+                wrap.style.cssText = 'background:var(--bg);border-radius:20px 20px 0 0;max-height:88vh;overflow-y:auto;';
+                wrap.innerHTML =
+                    '<div style="position:sticky;top:0;background:var(--bg);z-index:1;padding:10px 16px 8px;display:flex;align-items:center;border-bottom:1px solid var(--border);margin-bottom:4px;">' +
+                    '<div style="width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto;"></div>' +
+                    '<button onclick="closeCatEditSheet()" style="position:absolute;right:14px;background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:1.1em;line-height:1;padding:4px 6px;">✕</button>' +
+                    '</div>' +
+                    '<div id="_catEditSheetPanel" style="padding:8px 16px 40px;"></div>';
+                el.appendChild(wrap);
+                el.addEventListener('click', e => { if (e.target === el) closeCatEditSheet(); });
+                document.body.appendChild(el);
+            }
+            renderHomeCatEditPanel();
+        }
+        function closeCatEditSheet() {
+            homeEditingCatName = null;
+            homeEditingChildName = null;
+            homeEditingGrandchildName = null;
+            _editPhotoOpenArt = null;
+            const el = document.getElementById('_catEditSheet');
+            if (el) el.remove();
+        }
+
         // ── Subcategorías anidadas (hijos de categoría) ──
         function openHomeCatChildEdit(childName) {
             homeEditingChildName = homeEditingChildName === childName ? null : childName;
+            homeEditingGrandchildName = null;
             _editPhotoOpenArt = null;
             renderHomeCatEditPanel();
             setTimeout(() => { const p = document.getElementById('homeCatEditPanel'); if (p) p.scrollIntoView({ behavior:'smooth', block:'nearest' }); }, 60);
@@ -2268,7 +2508,10 @@
             child.articles.push(artName);
             saveCategoryOverrides();
             homeEditingChildName = childName;
+            const prevQ = (document.getElementById('homeCatChildSearch') || {}).value || '';
             renderHomeCatEditPanel();
+            const inp = document.getElementById('homeCatChildSearch');
+            if (inp && prevQ) { inp.value = prevQ; _renderEditSuggest('homeCatChildSearch', 'homeCatChildSuggest'); inp.focus(); }
         }
 
         function catRemoveArticleFromChild(catName, childName, artName) {
@@ -2419,6 +2662,13 @@
             _dragArtList = child ? child.articles : null;
             _artDragBegin(e, idx);
         }
+        function artDragGrandchildStart(e, idx) {
+            const cat = QUICK_ACCESS.find(c => c.cat === homeEditingCatName);
+            const child = cat && (cat.children || []).find(c => c.name === homeEditingChildName);
+            const gc = child && (child.children || []).find(c => c.name === homeEditingGrandchildName);
+            _dragArtList = gc ? (gc.articles || []) : null;
+            _artDragBegin(e, idx);
+        }
         function _artDragBegin(e, idx) {
             e.preventDefault(); e.stopPropagation();
             _dragArtIdx = idx; _dragArtOverIdx = null;
@@ -2428,17 +2678,20 @@
             _dragArtGhost.style.cssText = 'position:fixed;z-index:9999;pointer-events:none;width:' + r.width + 'px;opacity:0.88;box-shadow:0 4px 18px rgba(0,0,0,0.45);background:var(--bg-card);border-radius:8px;border:1px solid var(--primary);padding:7px 5px;box-sizing:border-box;left:' + r.left + 'px;top:' + r.top + 'px;transition:none;';
             document.body.appendChild(_dragArtGhost);
             row.classList.add('dragging');
-            document.addEventListener('touchmove', _artDragMove, { passive: false });
-            document.addEventListener('touchend', _artDragEnd);
+            if (e.type === 'mousedown') {
+                document.addEventListener('mousemove', _artMouseMove);
+                document.addEventListener('mouseup', _artMouseEnd);
+            } else {
+                document.addEventListener('touchmove', _artDragMove, { passive: false });
+                document.addEventListener('touchend', _artDragEnd);
+            }
         }
-        function _artDragMove(e) {
+        function _artDragMoveXY(cx, cy) {
             if (_dragArtIdx === null || !_dragArtGhost) return;
-            e.preventDefault();
-            const t = e.touches[0];
-            _dragArtGhost.style.left = (t.clientX - _dragArtGhost.offsetWidth / 2) + 'px';
-            _dragArtGhost.style.top = (t.clientY - _dragArtGhost.offsetHeight / 2) + 'px';
+            _dragArtGhost.style.left = (cx - _dragArtGhost.offsetWidth / 2) + 'px';
+            _dragArtGhost.style.top = (cy - _dragArtGhost.offsetHeight / 2) + 'px';
             _dragArtGhost.style.display = 'none';
-            const el = document.elementFromPoint(t.clientX, t.clientY);
+            const el = document.elementFromPoint(cx, cy);
             _dragArtGhost.style.display = '';
             document.querySelectorAll('.home-edit-art-row[data-ai]').forEach(r => r.classList.remove('drag-over'));
             if (el) {
@@ -2450,6 +2703,9 @@
                 }
             }
         }
+        function _artDragMove(e) { e.preventDefault(); const t = e.touches[0]; _artDragMoveXY(t.clientX, t.clientY); }
+        function _artMouseMove(e) { _artDragMoveXY(e.clientX, e.clientY); }
+        function _artMouseEnd() { document.removeEventListener('mousemove', _artMouseMove); document.removeEventListener('mouseup', _artMouseEnd); _artDragEnd(); }
         function _artDragEnd() {
             document.removeEventListener('touchmove', _artDragMove);
             document.removeEventListener('touchend', _artDragEnd);
@@ -2461,6 +2717,64 @@
                 saveCategoryOverrides();
             }
             _dragArtIdx = null; _dragArtOverIdx = null; _dragArtList = null;
+            renderHomeCatEditPanel();
+        }
+
+        // ── Drag subcategorías (child rows) en el panel de edición ──
+        let _dragChildIdx = null, _dragChildGhost = null, _dragChildOverIdx = null, _dragChildList = null;
+
+        function childDragStart(e, idx) {
+            e.preventDefault(); e.stopPropagation();
+            const cat = QUICK_ACCESS.find(c => c.cat === homeEditingCatName);
+            const child = homeEditingChildName && (cat.children || []).find(c => c.name === homeEditingChildName);
+            _dragChildList = child ? (child.children || null) : (cat ? (cat.children || null) : null);
+            if (!_dragChildList) return;
+            _dragChildIdx = idx; _dragChildOverIdx = null;
+            const row = e.currentTarget.closest('.home-edit-child-row');
+            const r = row.getBoundingClientRect();
+            _dragChildGhost = row.cloneNode(true);
+            _dragChildGhost.style.cssText = 'position:fixed;z-index:9999;pointer-events:none;width:' + r.width + 'px;opacity:0.88;box-shadow:0 4px 18px rgba(0,0,0,0.45);background:var(--bg-card);border-radius:8px;border:1px solid var(--primary);box-sizing:border-box;left:' + r.left + 'px;top:' + r.top + 'px;transition:none;';
+            document.body.appendChild(_dragChildGhost);
+            row.classList.add('dragging');
+            if (e.type === 'mousedown') {
+                document.addEventListener('mousemove', _childMouseMove);
+                document.addEventListener('mouseup', _childMouseEnd);
+            } else {
+                document.addEventListener('touchmove', _childTouchMove, { passive: false });
+                document.addEventListener('touchend', _childDragEnd);
+            }
+        }
+        function _childDragMoveXY(cx, cy) {
+            if (_dragChildIdx === null || !_dragChildGhost) return;
+            _dragChildGhost.style.left = (cx - _dragChildGhost.offsetWidth / 2) + 'px';
+            _dragChildGhost.style.top = (cy - _dragChildGhost.offsetHeight / 2) + 'px';
+            _dragChildGhost.style.display = 'none';
+            const el = document.elementFromPoint(cx, cy);
+            _dragChildGhost.style.display = '';
+            document.querySelectorAll('.home-edit-child-row[data-ci]').forEach(r => r.classList.remove('drag-over'));
+            if (el) {
+                const target = el.closest('.home-edit-child-row[data-ci]');
+                if (target) {
+                    const ti = parseInt(target.dataset.ci);
+                    if (!isNaN(ti) && ti !== _dragChildIdx) { target.classList.add('drag-over'); _dragChildOverIdx = ti; }
+                    else _dragChildOverIdx = null;
+                }
+            }
+        }
+        function _childTouchMove(e) { e.preventDefault(); const t = e.touches[0]; _childDragMoveXY(t.clientX, t.clientY); }
+        function _childMouseMove(e) { _childDragMoveXY(e.clientX, e.clientY); }
+        function _childMouseEnd() { document.removeEventListener('mousemove', _childMouseMove); document.removeEventListener('mouseup', _childMouseEnd); _childDragEnd(); }
+        function _childDragEnd() {
+            document.removeEventListener('touchmove', _childTouchMove);
+            document.removeEventListener('touchend', _childDragEnd);
+            if (_dragChildGhost) { _dragChildGhost.remove(); _dragChildGhost = null; }
+            document.querySelectorAll('.home-edit-child-row').forEach(r => r.classList.remove('dragging', 'drag-over'));
+            if (_dragChildIdx !== null && _dragChildOverIdx !== null && _dragChildIdx !== _dragChildOverIdx && _dragChildList) {
+                const [moved] = _dragChildList.splice(_dragChildIdx, 1);
+                _dragChildList.splice(_dragChildOverIdx, 0, moved);
+                saveCategoryOverrides();
+            }
+            _dragChildIdx = null; _dragChildOverIdx = null; _dragChildList = null;
             renderHomeCatEditPanel();
         }
 
@@ -2528,12 +2842,76 @@
         }
 
         function renderHomeCatEditPanel() {
-            const panel = document.getElementById('homeCatEditPanel');
+            const panel = document.getElementById('homeCatEditPanel') || document.getElementById('_catEditSheetPanel');
             if (!panel || !homeEditingCatName) return;
             const cat = QUICK_ACCESS.find(c => c.cat === homeEditingCatName);
             if (!cat) return;
             const esc = s => String(s).replace(/'/g, "\\'");
             const catEsc = esc(cat.cat);
+
+            // ── MODO: editando un sub-hijo (nivel 3) ──
+            if (homeEditingGrandchildName) {
+                const child = (cat.children || []).find(c => c.name === homeEditingChildName);
+                if (!child) { homeEditingGrandchildName = null; renderHomeCatEditPanel(); return; }
+                const gc = (child.children || []).find(c => c.name === homeEditingGrandchildName);
+                if (!gc) { homeEditingGrandchildName = null; renderHomeCatEditPanel(); return; }
+                const childEsc = esc(child.name);
+                const gcEsc = esc(gc.name);
+                const gcCands = gatherImgCandidates(gc.articles || []).slice(0, 16);
+
+                let html = '<button style="background:none;border:none;color:var(--primary);font-size:0.82em;font-weight:700;cursor:pointer;padding:0 0 8px;" onclick="homeEditingGrandchildName=null;renderHomeCatEditPanel()">← ' + cat.icon + ' ' + cat.cat + ' › ' + child.name + '</button>';
+                html += '<div class="home-edit-panel-title">✏️ ' + child.name + ' › ' + gc.name + '</div>';
+
+                html += '<div class="home-edit-section-label">Artículos (' + (gc.articles || []).length + ')</div>';
+                (gc.articles || []).forEach((artName, idx) => {
+                    const artEsc = esc(artName);
+                    const artSubs = (gc.articleSubcats && gc.articleSubcats[artName]) || [];
+                    html += '<div class="home-edit-art-row" data-ai="' + idx + '">';
+                    html += '<div class="art-drag-handle" ontouchstart="artDragGrandchildStart(event,' + idx + ')" onmousedown="artDragGrandchildStart(event,' + idx + ')">⋮⋮</div>';
+                    html += '<div class="art-row-body"><span class="home-edit-art-name">' + artName + '</span>';
+                    if (gc.subcats && gc.subcats.length) {
+                        html += '<span class="home-art-subcats">' + gc.subcats.map(s =>
+                            '<span class="home-art-sub-chip' + (artSubs.includes(s) ? ' on' : '') +
+                            '" onclick="catToggleGrandchildArticleSubcat(\'' + catEsc + '\',\'' + childEsc + '\',\'' + gcEsc + '\',\'' + artEsc + '\',\'' + esc(s) + '\')">' + s + '</span>'
+                        ).join('') + '</span>';
+                    }
+                    html += '</div>';
+                    html += '<button class="home-edit-art-btn" onclick="catRemoveArticleFromGrandchild(\'' + catEsc + '\',\'' + childEsc + '\',\'' + gcEsc + '\',\'' + artEsc + '\')" style="color:var(--danger)">✕</button>';
+                    html += '</div>';
+                });
+
+                html += '<div class="home-edit-section-label">Filtros rápidos</div>';
+                if (gc.subcats && gc.subcats.length) {
+                    html += '<div class="home-edit-subcat-row">' +
+                        gc.subcats.map(s =>
+                            '<span class="home-edit-subcat-chip">' + s + ' <span class="x" onclick="catRemoveGrandchildSubcat(\'' + catEsc + '\',\'' + childEsc + '\',\'' + gcEsc + '\',\'' + esc(s) + '\')">✕</span></span>'
+                        ).join('') + '</div>';
+                } else {
+                    html += '<div style="font-size:0.78em;color:var(--text-secondary);margin-bottom:6px;">Sin filtros.</div>';
+                }
+                html += '<div style="display:flex;gap:6px;margin-top:8px;">';
+                html += '<input id="homeCatGcNewSubcat" class="home-edit-search" style="flex:1;margin:0;" placeholder="Ej: Liso, Estampado..." onkeydown="if(event.key===\'Enter\')catAddGrandchildSubcat(\'' + catEsc + '\',\'' + childEsc + '\',\'' + gcEsc + '\')">';
+                html += '<button onclick="catAddGrandchildSubcat(\'' + catEsc + '\',\'' + childEsc + '\',\'' + gcEsc + '\')" style="padding:0 12px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">+</button>';
+                html += '</div>';
+
+                html += '<div class="home-edit-section-label">Agregar artículo</div>';
+                html += '<input id="homeCatGcSearch" class="home-edit-search" placeholder="Buscar..." oninput="renderHomeCatGcEditSuggest()">';
+                html += '<div id="homeCatGcSuggest" class="home-edit-suggest" style="display:none;"></div>';
+
+                if (gcCands.length) {
+                    html += '<div class="home-edit-section-label">Foto de portada</div>';
+                    html += '<div class="home-photo-picker">';
+                    html += '<div class="home-photo-opt-auto' + (!gc.img ? ' active' : '') + '" onclick="catSetGrandchildPhoto(\'' + catEsc + '\',\'' + childEsc + '\',\'' + gcEsc + '\',null)">↩️</div>';
+                    gcCands.forEach(url => {
+                        html += '<img class="home-photo-opt' + (gc.img === url ? ' active' : '') + '" src="' + url + '" referrerpolicy="no-referrer" loading="lazy" onclick="catSetGrandchildPhoto(\'' + catEsc + '\',\'' + childEsc + '\',\'' + gcEsc + '\',\'' + url.replace(/'/g, "\\'") + '\')" onerror="this.remove()">';
+                    });
+                    html += '</div>';
+                }
+
+                html += '<button style="width:100%;margin-top:14px;background:transparent;border:1px solid var(--danger);color:var(--danger);border-radius:8px;padding:8px;font-size:0.8em;font-weight:700;cursor:pointer;" onclick="catRemoveGrandchild(\'' + catEsc + '\',\'' + childEsc + '\',\'' + gcEsc + '\')">🗑️ Eliminar sub-subcategoría</button>';
+                panel.innerHTML = html;
+                return;
+            }
 
             // ── MODO: editando un hijo ──
             if (homeEditingChildName) {
@@ -2550,14 +2928,38 @@
                 child.articles.forEach((artName, idx) => {
                     const artEsc = esc(artName);
                     const photoOpen = _editPhotoOpenArt === artName;
+                    const artSubs = (child.articleSubcats && child.articleSubcats[artName]) || [];
                     html += '<div class="home-edit-art-row" data-ai="' + idx + '">';
-                    html += '<div class="art-drag-handle" ontouchstart="artDragChildStart(event,' + idx + ')">⋮⋮</div>';
-                    html += '<div class="art-row-body"><span class="home-edit-art-name">' + artName + '</span></div>';
+                    html += '<div class="art-drag-handle" ontouchstart="artDragChildStart(event,' + idx + ')" onmousedown="artDragChildStart(event,' + idx + ')">⋮⋮</div>';
+                    html += '<div class="art-row-body">';
+                    html += '<span class="home-edit-art-name">' + artName + '</span>';
+                    if (child.subcats && child.subcats.length) {
+                        html += '<span class="home-art-subcats">' + child.subcats.map(s =>
+                            '<span class="home-art-sub-chip' + (artSubs.includes(s) ? ' on' : '') +
+                            '" onclick="catToggleChildArticleSubcat(\'' + catEsc + '\',\'' + childEsc + '\',\'' + artEsc + '\',\'' + esc(s) + '\')">' + s + '</span>'
+                        ).join('') + '</span>';
+                    }
+                    html += '</div>';
                     html += '<button class="home-edit-art-btn" onclick="catToggleArtPhotoRow(\'' + artEsc + '\')" style="color:var(--primary);font-size:0.85em;">📷</button>';
                     html += '<button class="home-edit-art-btn" onclick="catRemoveArticleFromChild(\'' + catEsc + '\',\'' + childEsc + '\',\'' + artEsc + '\')" style="color:var(--danger)">✕</button>';
                     html += '</div>';
                     if (photoOpen) html += _artPhotoPickerHtml(artName);
                 });
+
+                // ── Filtros rápidos del hijo ──
+                html += '<div class="home-edit-section-label">Filtros rápidos</div>';
+                if (child.subcats && child.subcats.length) {
+                    html += '<div class="home-edit-subcat-row">' +
+                        child.subcats.map(s =>
+                            '<span class="home-edit-subcat-chip">' + s + ' <span class="x" onclick="catRemoveChildSubcat(\'' + catEsc + '\',\'' + childEsc + '\',\'' + esc(s) + '\')">✕</span></span>'
+                        ).join('') + '</div>';
+                } else {
+                    html += '<div style="font-size:0.78em;color:var(--text-secondary);margin-bottom:6px;">Sin filtros. Agregá uno para clasificar artículos.</div>';
+                }
+                html += '<div style="display:flex;gap:6px;margin-top:8px;">';
+                html += '<input id="homeCatChildNewSubcat" class="home-edit-search" style="flex:1;margin:0;" placeholder="Ej: Cuerina, Lisa..." onkeydown="if(event.key===\'Enter\')catAddChildSubcat(\'' + catEsc + '\',\'' + childEsc + '\')">';
+                html += '<button onclick="catAddChildSubcat(\'' + catEsc + '\',\'' + childEsc + '\')" style="padding:0 12px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">+</button>';
+                html += '</div>';
 
                 html += '<div class="home-edit-section-label">Agregar artículo</div>';
                 html += '<input id="homeCatChildSearch" class="home-edit-search" placeholder="Buscar..." oninput="renderHomeCatChildEditSuggest()">';
@@ -2572,6 +2974,24 @@
                     });
                     html += '</div>';
                 }
+
+                // ── Sub-subcategorías (nivel 3) ──
+                html += '<div class="home-edit-section-label">Sub-subcategorías</div>';
+                (child.children || []).forEach((gc, ci) => {
+                    const gcThumb = getChildCoverImg(gc);
+                    const gcEsc = esc(gc.name);
+                    html += '<div class="home-edit-child-row" data-ci="' + ci + '" onclick="openHomeCatGrandchildEdit(\'' + gcEsc + '\')">';
+                    html += '<div class="art-drag-handle" ontouchstart="childDragStart(event,' + ci + ')" onmousedown="childDragStart(event,' + ci + ')">⋮⋮</div>';
+                    if (gcThumb) html += '<img class="home-edit-child-thumb" src="' + gcThumb + '" referrerpolicy="no-referrer" onerror="this.style.display=\'none\'">';
+                    else html += '<div class="home-edit-child-thumb-ph">📦</div>';
+                    html += '<div class="home-edit-child-info"><div class="home-edit-child-name">' + gc.name + '</div><div class="home-edit-child-count">' + (gc.articles || []).length + ' artículos</div></div>';
+                    html += '<button class="home-edit-art-btn" onclick="event.stopPropagation();catRemoveGrandchild(\'' + catEsc + '\',\'' + childEsc + '\',\'' + gcEsc + '\')" style="color:var(--danger)">✕</button>';
+                    html += '</div>';
+                });
+                html += '<div style="display:flex;gap:6px;margin-top:8px;">' +
+                    '<input id="homeCatChildNewGc" class="home-edit-search" style="margin:0;flex:1;" placeholder="Ej: Cuerina, Lisa..." onkeydown="if(event.key===\'Enter\')catAddGrandchild(\'' + catEsc + '\',\'' + childEsc + '\')">' +
+                    '<button style="background:var(--success);color:#1a2744;border:none;border-radius:8px;padding:0 14px;font-weight:700;font-size:0.85em;cursor:pointer;" onclick="catAddGrandchild(\'' + catEsc + '\',\'' + childEsc + '\')">+</button>' +
+                    '</div>';
 
                 html += '<button style="width:100%;margin-top:14px;background:transparent;border:1px solid var(--danger);color:var(--danger);border-radius:8px;padding:8px;font-size:0.8em;font-weight:700;cursor:pointer;" onclick="catRemoveChild(\'' + catEsc + '\',\'' + childEsc + '\')">🗑️ Eliminar subcategoría</button>';
                 panel.innerHTML = html;
@@ -2589,7 +3009,7 @@
                 const artEsc = esc(artName);
                 const photoOpen = _editPhotoOpenArt === artName;
                 html += '<div class="home-edit-art-row" data-ai="' + idx + '">';
-                html += '<div class="art-drag-handle" ontouchstart="artDragStart(event,' + idx + ')">⋮⋮</div>';
+                html += '<div class="art-drag-handle" ontouchstart="artDragStart(event,' + idx + ')" onmousedown="artDragStart(event,' + idx + ')">⋮⋮</div>';
                 html += '<div class="art-row-body">';
                 html += '<span class="home-edit-art-name">' + artName + '</span>';
                 if (cat.subcats && cat.subcats.length) {
@@ -2630,10 +3050,11 @@
                 '</div>';
 
             html += '<div class="home-edit-section-label">Subcategorías (navegables)</div>';
-            (cat.children || []).forEach(child => {
+            (cat.children || []).forEach((child, ci) => {
                 const childThumb = getChildCoverImg(child);
                 const childEsc = esc(child.name);
-                html += '<div class="home-edit-child-row" onclick="openHomeCatChildEdit(\'' + childEsc + '\')">';
+                html += '<div class="home-edit-child-row" data-ci="' + ci + '" onclick="openHomeCatChildEdit(\'' + childEsc + '\')">';
+                html += '<div class="art-drag-handle" ontouchstart="childDragStart(event,' + ci + ')" onmousedown="childDragStart(event,' + ci + ')">⋮⋮</div>';
                 if (childThumb) html += '<img class="home-edit-child-thumb" src="' + childThumb + '" referrerpolicy="no-referrer" onerror="this.style.display=\'none\'">';
                 else html += '<div class="home-edit-child-thumb-ph">📦</div>';
                 html += '<div class="home-edit-child-info"><div class="home-edit-child-name">' + child.name + '</div><div class="home-edit-child-count">' + child.articles.length + ' artículos</div></div>';
@@ -2722,15 +3143,63 @@
                 const cat = QUICK_ACCESS.find(c => c.cat === homeCatSelected);
                 const activeChild = cat && cat.children && cat.children.find(c => c.name === homeCatChild);
 
-                if (activeChild) {
-                    // ── Dentro de un hijo: mostrar "← Dama" + artículos del hijo ──
+                const activeGrandchild = activeChild && activeChild.children && activeChild.children.find(c => c.name === homeCatGrandchild);
+
+                if (activeGrandchild) {
+                    // ── Nivel 3: dentro de sub-hijo ──
+                    const gcEsc = esc(activeGrandchild.name);
+                    html += '<div class="home-subcat-row">';
+                    html += '<button class="home-back-btn" onclick="setHomeCatGrandchild(null)">← ' + activeChild.name + '</button>';
+                    if (activeGrandchild.subcats && activeGrandchild.subcats.length) {
+                        html += '<span class="home-subcat-chip' + (!homeCatSubcat ? ' active' : '') + '" onclick="setHomeCatSubcat(null)">Todos</span>';
+                        activeGrandchild.subcats.forEach(s => {
+                            html += '<span class="home-subcat-chip' + (homeCatSubcat === s ? ' active' : '') + '" onclick="setHomeCatSubcat(\'' + esc(s) + '\')">' + s + '</span>';
+                        });
+                    }
+                    html += '<button class="home-edit-inline-btn" onclick="openCatEditSheet(\'' + esc(cat.cat) + '\',\'' + esc(activeChild.name) + '\',\'' + gcEsc + '\')">✏️</button>';
+                    html += '</div>';
+                    html += '<div class="home-cat-title">' + cat.icon + ' ' + cat.cat + ' › ' + activeChild.name + ' › ' + activeGrandchild.name + '</div>';
+                    var catArticles = activeGrandchild.articles || [];
+                    if (homeCatSubcat && activeGrandchild.articleSubcats) {
+                        catArticles = catArticles.filter(a => ((activeGrandchild.articleSubcats[a]) || []).includes(homeCatSubcat));
+                    }
+
+                } else if (activeChild) {
+                    // ── Nivel 2: dentro de un hijo ──
                     html += '<div class="home-subcat-row">';
                     html += '<button class="home-back-btn" onclick="setHomeCatChild(null)">← ' + (cat ? cat.cat : 'Atrás') + '</button>';
+                    if (activeChild.subcats && activeChild.subcats.length) {
+                        html += '<span class="home-subcat-chip' + (!homeCatSubcat ? ' active' : '') + '" onclick="setHomeCatSubcat(null)">Todos</span>';
+                        activeChild.subcats.forEach(s => {
+                            html += '<span class="home-subcat-chip' + (homeCatSubcat === s ? ' active' : '') + '" onclick="setHomeCatSubcat(\'' + esc(s) + '\')">' + s + '</span>';
+                        });
+                    }
+                    html += '<button class="home-edit-inline-btn" onclick="openCatEditSheet(\'' + esc(cat.cat) + '\',\'' + esc(activeChild.name) + '\')">✏️</button>';
                     html += '</div>';
                     html += '<div class="home-cat-title">' + (cat ? cat.icon + ' ' + cat.cat : '') + ' › ' + activeChild.name + '</div>';
+
+                    // Tiles de sub-hijos (nivel 3) si los hay
+                    if (activeChild.children && activeChild.children.length) {
+                        html += '<div class="home-child-tiles">';
+                        activeChild.children.forEach(gc => {
+                            const gcImg = getChildCoverImg(gc);
+                            html += '<div class="home-child-tile" onclick="setHomeCatGrandchild(\'' + esc(gc.name) + '\')">';
+                            if (gcImg) html += '<img class="home-child-tile-img" src="' + gcImg + '" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display=\'none\'">';
+                            else html += '<div class="home-child-tile-img-ph">📦</div>';
+                            html += '<div class="home-child-tile-label">' + gc.name + '</div>';
+                            html += '<div class="home-child-tile-count">' + (gc.articles || []).length + ' artículos</div>';
+                            html += '</div>';
+                        });
+                        html += '</div>';
+                    }
+
                     var catArticles = activeChild.articles;
+                    if (homeCatSubcat && activeChild.articleSubcats) {
+                        catArticles = catArticles.filter(a => ((activeChild.articleSubcats[a]) || []).includes(homeCatSubcat));
+                    }
+
                 } else {
-                    // ── Vista raíz de la categoría ──
+                    // ── Nivel 1: raíz de la categoría ──
                     html += '<div class="home-subcat-row">';
                     html += '<button class="home-back-btn" onclick="goHomeLevel1()">← Categorías</button>';
                     if (cat && cat.subcats && cat.subcats.length) {
@@ -2739,11 +3208,12 @@
                             html += '<span class="home-subcat-chip' + (homeCatSubcat === s ? ' active' : '') + '" onclick="setHomeCatSubcat(\'' + esc(s) + '\')">' + s + '</span>';
                         });
                     }
+                    html += '<button class="home-edit-inline-btn" onclick="openCatEditSheet(\'' + esc(cat.cat) + '\')">✏️</button>';
                     html += '</div>';
                     html += '<div class="home-cat-title">' + (cat ? cat.icon + ' ' + cat.cat : '') + '</div>';
 
-                    // Tiles de hijos (si los hay)
-                    if (cat && cat.children && cat.children.length) {
+                    // Tiles de hijos (nivel 2) — se ocultan si hay un filtro rápido activo
+                    if (cat && cat.children && cat.children.length && !homeCatSubcat) {
                         html += '<div class="home-child-tiles">';
                         cat.children.forEach(child => {
                             const childImg = getChildCoverImg(child);
@@ -2977,8 +3447,9 @@
         function renderArticleDetail() {
             const articleName = state.search;
             if (_lastDetailArticleName !== articleName) {
-                articleShowHiddenColors = false; // nuevo artículo → arrancar ocultando los sin stock
+                articleShowHiddenColors = false;
                 _lastDetailArticleName = articleName;
+                artEcomStock = {}; // limpiar stock ecomm al cambiar de artículo
             }
             const allProducts = PRODUCTS.filter(p => {
                 const name = (p.titulo || p.articulo || '').toLowerCase();
@@ -3059,11 +3530,13 @@
             const colorNames = articleShowHiddenColors ? colorNamesAll : colorNamesAll.filter(c => colorStockMap[c] > 0);
 
             // Stats + photo toggle + mostrar/ocultar colores sin stock
+            const hasEcomStock = Object.keys(artEcomStock).length > 0;
             html += '<div class="article-stats-row">' +
                 '<span>🎨 <strong>' + colorNamesAll.length + '</strong> ' + (colorNamesAll.length === 1 ? 'color' : 'colores') + '</span>' +
                 '<span>📊 <strong>' + totalStock + '</strong></span>' +
                 (modCount ? '<span style="color:var(--purple)">✏️ ' + modCount + '</span>' : '') +
                 '<button class="article-photo-toggle" id="articlePhotoToggle" onclick="toggleArticlePhotos()">📷</button>' +
+                '<button class="article-photo-toggle' + (hasEcomStock ? ' active' : '') + '" id="artEcomRefreshBtn" onclick="fetchEcomStockForArticle()" title="Stock actual en Ecomm">🔄</button>' +
                 (hiddenColorNames.length
                     ? '<button class="article-photo-toggle' + (articleShowHiddenColors ? ' active' : '') + '" onclick="toggleHiddenColors()">' +
                         (articleShowHiddenColors ? '🙈 Ocultar sin stock' : '👁️ Mostrar ocultos (' + hiddenColorNames.length + ')') +
@@ -3109,6 +3582,7 @@
                         _deltaBadgeHtml(mod) +
                         '<div class="asc-size">' + state.sizes[0] + '</div>' +
                         '<div class="asc-stock ' + stockClass + '">' + currentStock + '</div>' +
+                        (artEcomStock[String(p.codigo)] !== undefined ? '<div class="asc-ecom" style="color:' + (artEcomStock[String(p.codigo)] <= 0 ? 'var(--danger)' : artEcomStock[String(p.codigo)] <= 3 ? 'var(--warning)' : 'var(--success)') + '">▸' + artEcomStock[String(p.codigo)] + '</div>' : '') +
                         '</div>';
                     html += '</div>';
                 });
@@ -3173,6 +3647,7 @@
                             _deltaBadgeHtml(mod) +
                             '<div class="asc-size">' + (p.talle || '-') + '</div>' +
                             '<div class="asc-stock ' + stockClass + '">' + currentStock + '</div>' +
+                            (artEcomStock[String(p.codigo)] !== undefined ? '<div class="asc-ecom" style="color:' + (artEcomStock[String(p.codigo)] <= 0 ? 'var(--danger)' : artEcomStock[String(p.codigo)] <= 3 ? 'var(--warning)' : 'var(--success)') + '">▸' + artEcomStock[String(p.codigo)] + '</div>' : '') +
                             '</div>';
                     });
                     html += '</div></div>';
@@ -3774,9 +4249,30 @@
         }
 
         function exportCategoryConfig() {
+            // Exporta exactamente lo mismo que saveCategoryOverrides guarda en localStorage
             const data = { _order: QUICK_ACCESS.map(c => c.cat), _articlePhotos: homeArticlePhotos };
             QUICK_ACCESS.forEach(cat => {
-                data[cat.cat] = { articles: cat.articles, img: cat.img || null, icon: cat.icon, subcats: cat.subcats || [], articleSubcats: cat.articleSubcats || {} };
+                data[cat.cat] = {
+                    articles: cat.articles,
+                    img: cat.img || null,
+                    icon: cat.icon,
+                    subcats: cat.subcats || [],
+                    articleSubcats: cat.articleSubcats || {},
+                    children: (cat.children || []).map(ch => ({
+                        name: ch.name,
+                        articles: ch.articles || [],
+                        img: ch.img || null,
+                        subcats: ch.subcats || [],
+                        articleSubcats: ch.articleSubcats || {},
+                        children: (ch.children || []).map(gc => ({
+                            name: gc.name,
+                            articles: gc.articles || [],
+                            img: gc.img || null,
+                            subcats: gc.subcats || [],
+                            articleSubcats: gc.articleSubcats || {}
+                        }))
+                    }))
+                };
             });
             const json = JSON.stringify(data);
             if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -4280,6 +4776,75 @@
         }
         
         // #9 Offline/online detection
+        // ── Back button / PWA navigation ──
+        window.addEventListener('popstate', () => {
+            // Si el overlay de edición está abierto, cerrarlo primero
+            if (document.getElementById('_catEditSheet')) {
+                const lvl = homeCatGrandchild ? 'grandchild' : homeCatChild ? 'child' : homeCatSelected ? 'cat' : 'root';
+                history.pushState({ app: 'mikra', level: lvl }, '');
+                closeCatEditSheet();
+                return;
+            }
+            if (homeMode && !homeCatGrandchild && !homeCatChild && !homeCatSelected) {
+                // En el inicio raíz → evitar cierre y preguntar
+                history.pushState({ app: 'mikra', level: 'root' }, '');
+                _showExitConfirm();
+                return;
+            }
+            if (homeMode) {
+                if (homeCatGrandchild) {
+                    homeCatGrandchild = null; homeCatSubcat = null; renderHomeScreen();
+                } else if (homeCatChild) {
+                    homeCatChild = null; homeCatGrandchild = null; homeCatSubcat = null; renderHomeScreen();
+                } else if (homeCatSelected) {
+                    homeCatSelected = null; homeCatSubcat = null; homeCatChild = null; homeCatGrandchild = null; renderHomeScreen();
+                }
+            } else {
+                // Volver al punto exacto del home desde donde se abrió el artículo
+                if (_prevHomeState) {
+                    homeMode = true;
+                    homeCatSelected   = _prevHomeState.catSelected;
+                    homeCatChild      = _prevHomeState.catChild;
+                    homeCatGrandchild = _prevHomeState.catGrandchild || null;
+                    homeCatSubcat     = _prevHomeState.catSubcat;
+                    _prevHomeState = null;
+                    state.search = ''; state.searchExact = false; state.colors = []; state.sizes = [];
+                    $('searchInput').value = '';
+                    $('searchClear').classList.remove('show');
+                    $('autocomplete').classList.remove('show');
+                    articleCloseEditBar();
+                    renderHomeScreen();
+                } else {
+                    goHome();
+                }
+            }
+            window.scrollTo({ top: 0 });
+        });
+
+        function _showExitConfirm() {
+            if (document.getElementById('_exitSheet')) return;
+            const sheet = document.createElement('div');
+            sheet.id = '_exitSheet';
+            sheet.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;display:flex;align-items:flex-end;justify-content:center;';
+            sheet.innerHTML =
+                '<div style="background:var(--bg-card);border-radius:16px 16px 0 0;padding:22px 20px calc(22px + env(safe-area-inset-bottom,0px));width:100%;max-width:520px;text-align:center;">' +
+                '<div style="font-size:1em;font-weight:800;margin-bottom:4px;">¿Salir de la app?</div>' +
+                '<div style="font-size:0.82em;color:var(--text-secondary);margin-bottom:18px;">Presionaste atrás desde el inicio.</div>' +
+                '<div style="display:flex;gap:10px;">' +
+                '<button style="flex:1;padding:13px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:10px;font-weight:700;font-size:0.95em;cursor:pointer;" onclick="document.getElementById(\'_exitSheet\').remove()">No</button>' +
+                '<button style="flex:1;padding:13px;background:var(--danger);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:0.95em;cursor:pointer;" onclick="_exitApp()">Sí, salir</button>' +
+                '</div></div>';
+            sheet.addEventListener('click', e => { if (e.target === sheet) sheet.remove(); });
+            document.body.appendChild(sheet);
+        }
+
+        function _exitApp() {
+            const s = document.getElementById('_exitSheet');
+            if (s) s.remove();
+            try { window.close(); } catch(e) {}
+            setTimeout(() => history.go(-2), 80); // salta la guard + la raíz → sale
+        }
+
         window.addEventListener('online', () => {
             $('offlineBar').classList.remove('show');
             toast('✓ Conectado', 'success');
@@ -4444,6 +5009,51 @@
     </div>
 
     <script>
+        // ── Stock ecomm en vista de artículo ──
+        let _artEcomLoading = false;
+        async function _fetchEcomSkus(skus, batchSize = 8) {
+            const result = {};
+            for (let i = 0; i < skus.length; i += batchSize) {
+                const batch = skus.slice(i, i + batchSize);
+                const settled = await Promise.allSettled(batch.map(sku =>
+                    fetch('https://ecomm-token-proxy.rafaelassir.workers.dev/get-stock?sku=' + encodeURIComponent(sku))
+                        .then(r => r.json())
+                        .then(d => ({ sku, stock: d.error ? null : d.stock }))
+                        .catch(() => ({ sku, stock: null }))
+                ));
+                settled.forEach(s => {
+                    if (s.status === 'fulfilled' && s.value.stock !== null)
+                        result[s.value.sku] = s.value.stock;
+                });
+            }
+            return result;
+        }
+        async function fetchEcomStockForArticle() {
+            if (_artEcomLoading) return;
+            const prods = PRODUCTS.filter(p => {
+                const n = (p.titulo || p.articulo || '').toLowerCase();
+                if (n !== (state.search || '').toLowerCase() || !p.codigo) return false;
+                if (state.colors.length && !state.colors.includes(p.color)) return false;
+                if (state.sizes.length && !state.sizes.includes(p.talle)) return false;
+                return true;
+            });
+            if (!prods.length) { toast('Sin SKUs en este artículo', 'warning'); return; }
+            _artEcomLoading = true;
+            const btn = $('artEcomRefreshBtn');
+            if (btn) btn.style.opacity = '0.5';
+            const skus = [...new Set(prods.map(p => String(p.codigo)))];
+            toast('Consultando ' + skus.length + ' SKUs...', '');
+            try {
+                artEcomStock = await _fetchEcomSkus(skus);
+                toast('✅ Stock ecomm actualizado', 'success');
+                renderArticleDetail();
+            } catch(e) {
+                toast('❌ Error al consultar ecomm', 'error');
+            }
+            _artEcomLoading = false;
+            if (btn) btn.style.opacity = '';
+        }
+
         const ECOMM_WORKER = 'https://ecomm-token-proxy.rafaelassir.workers.dev';
         const ECOMM_PIN = '9148';
         const ECOMM_LOTE = 20;
