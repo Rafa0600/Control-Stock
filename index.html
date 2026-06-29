@@ -4066,11 +4066,7 @@
             showModal();
 
             try {
-                const resp = await _fetchWithTimeout(
-                    `${WORKER_MOV_ECOMM}/movimientos?sku=${encodeURIComponent(sku)}&dias=7`, {}, 12000
-                );
-                const d = await resp.json();
-                if (!d.ok) throw new Error('API error');
+                const d = await _fetchMovimientosEcomm(sku, 7);   // cache-bust + reintentos
 
                 const ventasML = (d.movimientos || []).filter(m => {
                     const tipo = String(m.tipo_movimiento ?? '').toLowerCase();
@@ -4119,17 +4115,7 @@
                 const tiendaMatch = (m.tipo_movimiento ?? '').match(/:\s*(.+)$/);
                 const tienda = tiendaMatch ? tiendaMatch[1].trim() : '';
 
-                let fechaStr = '—';
-                const fechaRaw = m.fecha ?? m.Fecha;
-                if (fechaRaw) {
-                    try {
-                        fechaStr = new Date(fechaRaw).toLocaleString('es-AR', {
-                            timeZone: 'America/Argentina/Buenos_Aires',
-                            day: '2-digit', month: '2-digit',
-                            hour: '2-digit', minute: '2-digit'
-                        });
-                    } catch {}
-                }
+                const fechaStr = _fmtFechaMovAR(m.fecha ?? m.Fecha);   // hora Argentina (sin convertir)
 
                 const st = statuses[i];
                 let statusHtml;
@@ -5394,6 +5380,29 @@
             }
         }
 
+        // Trae los movimientos de un SKU de forma CONFIABLE:
+        //  · cache-buster `_t` → nunca devuelve una respuesta vieja del edge-cache de Cloudflare
+        //  · cache:'no-store'  → ignora el caché del navegador / service worker
+        //  · reintentos        → una falla transitoria de red no se traduce en "sin ventas"
+        // Si tras los reintentos no logra una respuesta ok, LANZA → el caller lo marca como
+        // ERROR VISIBLE (no como "no hay ventas").
+        async function _fetchMovimientosEcomm(sku, dias = 7, intentos = 3) {
+            let lastErr = null;
+            for (let i = 0; i < intentos; i++) {
+                try {
+                    const url = `${WORKER_MOV_ECOMM}/movimientos?sku=${encodeURIComponent(sku)}&dias=${dias}&_t=${Date.now()}`;
+                    const resp = await _fetchWithTimeout(url, { cache: 'no-store' }, 12000);
+                    const d = await resp.json();
+                    if (d && d.ok) return d;
+                    lastErr = new Error('respuesta no-ok del worker');
+                } catch(e) {
+                    lastErr = e;
+                }
+                if (i < intentos - 1) await new Promise(r => setTimeout(r, 400 * (i + 1)));
+            }
+            throw lastErr || new Error('movimientos: fallo');
+        }
+
         async function getMLTokEcomm(proxy) {
             const c = _mlTokEcomm[proxy];
             if (c && Date.now() < c.expiresAt) return c;
@@ -5403,17 +5412,42 @@
             return info;
         }
 
+        // IMPORTANTE: la DB guarda la fecha en hora de ARGENTINA, pero a veces con un sufijo "Z"
+        // (de UTC) que es ENGAÑOSO — el número "16:11" ya es hora argentina, no UTC.
+        // Para comparar con el corte (que también es hora argentina) tomamos SIEMPRE los números
+        // de pared y los interpretamos en un marco fijo (UTC), sin convertir zona. Así "16:11"
+        // se compara como 16:11, igual que el corte (que se parsea con ':00Z').
         function parseFechaMovimiento(fechaStr) {
             if (!fechaStr) return null;
-            const s = String(fechaStr);
-            // Si tiene info de timezone (Z o +/-HH:MM), parsear directo
-            if (s.endsWith('Z') || /[+-]\d{2}:\d{2}$/.test(s)) {
-                const dt = new Date(s);
-                return isNaN(dt) ? null : dt;
-            }
-            // Sin timezone — asumir Argentina -03:00
-            const dt = new Date(s.replace(' ', 'T') + '-03:00');
-            return isNaN(dt) ? null : dt;
+            const s = String(fechaStr).trim();
+            const m = s.match(/(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?/);
+            if (!m) { const d = new Date(s); return isNaN(d) ? null : d; }
+            const [, y, mo, d, hh, mi, se] = m;
+            return new Date(Date.UTC(+y, +mo - 1, +d, +hh, +mi, +(se || 0)));
+        }
+
+        // Formatea la fecha de un movimiento para MOSTRAR, en hora de Argentina (los números tal
+        // cual vienen en la DB, sin convertir zona) → coincide con lo que muestra ML.
+        function _fmtFechaMovAR(fechaRaw) {
+            if (!fechaRaw) return '—';
+            const m = String(fechaRaw).match(/(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+            if (!m) return String(fechaRaw);
+            const [, , mo, d, hh, mi] = m;
+            return `${d}/${mo} ${hh}:${mi}`;
+        }
+
+        // "Ahora" en hora de Argentina como string "YYYY-MM-DDTHH:mm" (para el picker de corte).
+        // Usa formatToParts (robusto) en vez de split de toLocaleString (que con la coma daba
+        // hora vacía → corte a medianoche por error).
+        function _ahoraArgentinaCutoff() {
+            const partes = {};
+            new Intl.DateTimeFormat('en-CA', {
+                timeZone: 'America/Argentina/Buenos_Aires',
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit', hour12: false
+            }).formatToParts(new Date()).forEach(p => { partes[p.type] = p.value; });
+            const hh = partes.hour === '24' ? '00' : partes.hour;   // algunos motores devuelven 24
+            return `${partes.year}-${partes.month}-${partes.day}T${hh}:${partes.minute}`;
         }
 
         // hint: nombre de cuenta probable ('Mikra' | 'Chaya') deducido de la tienda del
@@ -5459,13 +5493,13 @@
                     }
 
                     const info = { substatus, status };
-                    _mlVentaEcomm.set(orderId, info);
+                    _mlVentaEcomm.set(orderId, info);   // solo cacheamos resoluciones EXITOSAS
                     return info;
                 } catch { continue; }
             }
-            const info = { notFound: true };
-            _mlVentaEcomm.set(orderId, info);
-            return info;
+            // NO cachear el fallo: si fue por red/token/403 transitorio, un próximo intento
+            // (o el botón Refrescar) tiene que poder reintentar — no quedar pegado en "notFound".
+            return { notFound: true };
         }
 
         // Deduce la cuenta probable a partir de la tienda que viene en el movimiento.
@@ -5636,10 +5670,7 @@
         }
 
         function _setSettingsCutoffNow() {
-            const now = new Date();
-            const pad = n => String(n).padStart(2, '0');
-            const dateStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
-            const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+            const [dateStr, timeStr] = _ahoraArgentinaCutoff().split('T');   // hora Argentina
             const dEl = document.getElementById('setEcommCutoffDate');
             const tEl = document.getElementById('setEcommCutoffTime');
             if (dEl) dEl.value = dateStr;
@@ -5656,10 +5687,7 @@
         }
 
         function _setCutoffNow(prefix) {
-            const now = new Date();
-            const pad = n => String(n).padStart(2, '0');
-            const dateStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
-            const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+            const [dateStr, timeStr] = _ahoraArgentinaCutoff().split('T');   // hora Argentina
             const dateEl = document.getElementById(prefix + 'CutoffDate');
             const timeEl = document.getElementById(prefix + 'CutoffTime');
             if (dateEl) dateEl.value = dateStr;
@@ -5682,6 +5710,7 @@
         function reVerificar() {
             const cutoff = $('vsiCutoffInput')?.value || state.ecommCutoff;
             _vsiProgress = { loaded: 0, total: Object.keys(state.modifications).length };
+            _mlVentaEcomm = new Map();   // limpiar caché ML → reconsultar todo de cero
             renderVSIModal('loading', cutoff);
             verificarVentasSinImprimir(cutoff);
         }
@@ -5697,10 +5726,8 @@
             _avResultados = [];
             _mlVentaEcomm = new Map(); // Reset cache ML
 
-            const now = new Date();
-            const pad = n => String(n).padStart(2,'0');
-            const arStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
-            const defaultCutoff = state.ecommCutoff || arStr;
+            // Default = ahora en hora de Argentina (consistente con cómo se parsea el corte)
+            const defaultCutoff = state.ecommCutoff || _ahoraArgentinaCutoff();
 
             _avProgress = { loaded: 0, total: mods.length };
             renderAVModal('loading', defaultCutoff);
@@ -5710,6 +5737,15 @@
 
         function cerrarAjustarVentas() {
             $('ajustarVentasOverlay').classList.remove('show');
+        }
+
+        function reConsultarAV() {
+            const cutoff = $('avCutoffInput')?.value || state.ecommCutoff || '';
+            const mods = Object.values(state.modifications);
+            _avProgress = { loaded: 0, total: mods.length };
+            _mlVentaEcomm = new Map();   // limpiar caché ML → reintentar de cero
+            renderAVModal('loading', cutoff);
+            consultarVentasPreCorte(cutoff);
         }
 
         function onAVCutoffChange(val) {
@@ -5739,7 +5775,10 @@
 
             let html = `
                 <div style="margin-bottom:14px;padding:10px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:9px;">
-                    <div style="font-size:0.72em;color:var(--text-secondary);margin-bottom:8px;">Ventas sin imprimir <em>antes</em> de este horario:</div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                        <div style="font-size:0.72em;color:var(--text-secondary);">Ventas sin imprimir <em>antes</em> de este horario:</div>
+                        ${!isLoading ? `<button onclick="reConsultarAV()" style="padding:3px 9px;background:var(--bg-input);border:1px solid var(--border);border-radius:6px;color:var(--text-secondary);font-size:0.72em;cursor:pointer;flex-shrink:0;white-space:nowrap;">🔄 Refrescar</button>` : ''}
+                    </div>
                     ${isLoading ? `<div style="font-size:0.82em;color:var(--text-secondary);">⏳ Cargando...</div>` : _renderCutoffPicker('av', cutoff)}
                 </div>`;
 
@@ -5786,11 +5825,17 @@
 
             const hayPendientes = _avResultados.some(r => r.pendingUnits > 0);
             const hayErrores = _avResultados.some(r => r.error);
+            const hayNoVerif = _avResultados.some(r => r.unverified > 0);
             let html = '';
 
             if (hayErrores) {
                 html += `<div style="font-size:0.78em;color:var(--danger);margin-bottom:10px;padding:8px 10px;background:rgba(239,68,68,0.1);border:1px solid var(--danger);border-radius:6px;">
-                    ⚠️ <strong>Algunos artículos no se pudieron verificar</strong> — revisar manualmente si tuvieron ventas antes del corte.
+                    ⚠️ <strong>Algunos artículos no se pudieron consultar</strong> — revisar manualmente si tuvieron ventas antes del corte.
+                </div>`;
+            }
+            if (hayNoVerif) {
+                html += `<div style="font-size:0.78em;color:var(--danger);margin-bottom:10px;padding:8px 10px;background:rgba(239,68,68,0.1);border:1px solid var(--danger);border-radius:6px;">
+                    ⚠️ <strong>Algunas ventas no se pudieron verificar</strong> (falló la consulta a ML). Tocá <strong>🔄 Refrescar</strong> para reintentar antes de ajustar.
                 </div>`;
             }
             if (hayPendientes) {
@@ -5839,9 +5884,24 @@
                                     SKU ${p.codigo} · Tu conteo: <span style="color:var(--primary);">${r.mod.oldStock} → ${baseStock} (${signo})</span>
                                     ${yaAjustado ? `<span style="color:var(--warning);"> · Ajuste anterior: −${r.mod.ajustePreCorte}</span>` : ''}
                                 </div>
+                                ${r.unverified > 0 ? `<div style="font-size:0.72em;color:var(--danger);font-weight:700;margin-top:4px;">⚠️ ${r.unverified} venta${r.unverified!==1?'s':''} no verificada${r.unverified!==1?'s':''} — refrescá antes de ajustar</div>` : ''}
                             </div>
                             ${r.pendingUnits > 0 ? `<div style="flex-shrink:0;font-size:0.78em;color:var(--warning);font-weight:700;white-space:nowrap;">📋 ${r.pendingUnits} ud${r.pendingUnits!==1?'s':''}</div>` : ''}
                         </div>
+                        ${(r.pendingSales && r.pendingSales.length) ? `
+                            <div style="margin-top:8px;border-top:1px solid var(--border);padding-top:6px;">
+                                <div style="font-size:0.68em;color:var(--text-secondary);margin-bottom:3px;">Ventas sin imprimir antes del corte:</div>
+                                ${r.pendingSales.map(s => `
+                                    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:3px 0;font-size:0.72em;">
+                                        <div style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                                            <span style="color:var(--text);">${s.fecha}</span>${s.esCombo ? ` <span style="font-size:0.9em;background:var(--purple);color:white;padding:0 4px;border-radius:3px;">pack</span>` : ''}
+                                            <span style="color:var(--text-secondary);"> · ${s.tienda}${s.nro ? ' · #' + s.nro : ''}</span>
+                                        </div>
+                                        <div style="flex-shrink:0;color:var(--warning);font-weight:700;">📋 −${s.units}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
                         ${r.pendingUnits > 0 ? `
                             <div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                                 <div style="font-size:0.78em;color:var(--text-secondary);">Ajuste:</div>
@@ -5946,6 +6006,8 @@
             const mods = Object.values(state.modifications);
             if (!mods.length) { cerrarAjustarVentas(); return; }
 
+            // El corte es hora de ARGENTINA, igual que las fechas de la DB (que vienen con "Z"
+            // engañoso). Se comparan como números de pared: el corte también con ':00Z'.
             const cutoffDate = cutoff ? new Date(cutoff + ':00Z') : null;
             _avProgress = { loaded: 0, total: mods.length };
             _updateAVProgress();
@@ -5956,18 +6018,16 @@
 
                 _avResultados = await Promise.all(mods.map(async mod => {
                     const sku = mod.product.codigo;
-                    const result = { sku, mod, pendingUnits: 0, adjust: 0 };
+                    const result = { sku, mod, pendingUnits: 0, adjust: 0, unverified: 0 };
                     try {
                         let d;
                         try {
-                            const resp = await _fetchWithTimeout(`${WORKER_MOV_ECOMM}/movimientos?sku=${encodeURIComponent(sku)}&dias=7`, {}, 12000);
-                            d = await resp.json();
+                            d = await _fetchMovimientosEcomm(sku, 7);   // cache-bust + reintentos
                         } catch(fetchErr) {
                             result.timedOut = fetchErr.name === 'AbortError';
                             result.error = result.timedOut ? 'timeout' : (fetchErr.message || 'error');
                             _avProgress.loaded++; _updateAVProgress(); return result;
                         }
-                        if (!d.ok) { _avProgress.loaded++; _updateAVProgress(); return result; }
 
                         const movs = d.movimientos || [];
                         const ventasML = movs.filter(m => {
@@ -5986,22 +6046,38 @@
                         });
 
                         if (ventasML.length) {
-                            // Resolver todas las ventas EN PARALELO (acotado por el semáforo global)
+                            // Resolver todas las ventas EN PARALELO (acotado por el semáforo global).
+                            // Distinguimos ÉXITO de FALLA: una venta que no se pudo resolver NO se
+                            // descarta en silencio — se cuenta como "no verificada" y se avisa.
                             const infos = await Promise.all(ventasML.map(m => {
                                 const nro = String(m.nro_comprobante ?? m.Nro_comprobante_operacion ?? '');
-                                return resolverVentaEcommPool(nro, _cuentaHintMov(m)).catch(() => null);
+                                return resolverVentaEcommPool(nro, _cuentaHintMov(m))
+                                    .then(info => ({ info }))
+                                    .catch(err => ({ err }));
                             }));
-                            let totalUnits = 0;
+                            let totalUnits = 0, unver = 0;
+                            const pendingSales = [];
                             ventasML.forEach((m, idx) => {
-                                const info = infos[idx];
-                                if (!info || info.notFound) return;
-                                if (esImpresoEcomm(info.substatus, info.status) !== false) return;
-                                totalUnits += _contarUnidadesMovimiento(m);
+                                const { info, err } = infos[idx];
+                                if (err || !info || info.notFound) { unver++; return; }  // no se pudo verificar
+                                if (esImpresoEcomm(info.substatus, info.status) !== false) return; // impreso
+                                const u = _contarUnidadesMovimiento(m);                  // pendiente
+                                totalUnits += u;
+                                const tiendaMatch = (m.tipo_movimiento ?? '').match(/:\s*(.+)$/);
+                                pendingSales.push({
+                                    fecha: _fmtFechaMovAR(m.fecha ?? m.Fecha),
+                                    tienda: tiendaMatch ? tiendaMatch[1].trim() : '',
+                                    nro: String(m.nro_comprobante ?? m.Nro_comprobante_operacion ?? ''),
+                                    units: u,
+                                    esCombo: String(m.es_combo ?? m.Es_combo ?? '').toLowerCase() === 'si'
+                                });
                             });
                             result.pendingUnits = totalUnits;
                             result.adjust = totalUnits;
+                            result.unverified = unver;
+                            result.pendingSales = pendingSales;
                         }
-                    } catch {}
+                    } catch(e) { result.error = e.message || 'error'; }
                     _avProgress.loaded++;
                     _updateAVProgress();
                     return result;
@@ -6017,11 +6093,7 @@
         function abrirVerificacionVentas() {
             _vsiResultados = [];
             _mlVentaEcomm = new Map();
-            const now = new Date();
-            // Hora actual en Argentina
-            const partes = now.toLocaleString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires', hour12: false }).split(/[, :]/);
-            const arStr = `${partes[0]}T${String(partes[1]).padStart(2,'0')}:${String(partes[2]).padStart(2,'0')}`;
-            const defaultCutoff = state.ecommCutoff || arStr;
+            const defaultCutoff = state.ecommCutoff || _ahoraArgentinaCutoff();
             _vsiProgress = { loaded: 0, total: Object.keys(state.modifications).length };
             renderVSIModal('loading', defaultCutoff);
             $('ventasSiOverlay').classList.add('show');
@@ -6104,11 +6176,17 @@
 
             const hayExtra  = _vsiResultados.some(r => r.adjust > 0);
             const hayErrores = _vsiResultados.some(r => r.error);
+            const hayNoVerif = _vsiResultados.some(r => r.unverified > 0);
             let html = '';
 
             if (hayErrores) {
                 html += `<div style="font-size:0.78em;color:var(--danger);margin-bottom:10px;padding:8px 10px;background:rgba(239,68,68,0.1);border:1px solid var(--danger);border-radius:6px;">
-                    ⚠️ <strong>Algunos artículos no se pudieron verificar</strong> — revisar manualmente si hubo ventas sin imprimir.
+                    ⚠️ <strong>Algunos artículos no se pudieron consultar</strong> — revisar manualmente si hubo ventas sin imprimir.
+                </div>`;
+            }
+            if (hayNoVerif) {
+                html += `<div style="font-size:0.78em;color:var(--danger);margin-bottom:10px;padding:8px 10px;background:rgba(239,68,68,0.1);border:1px solid var(--danger);border-radius:6px;">
+                    ⚠️ <strong>Algunas ventas no se pudieron verificar</strong> (falló la consulta a ML). Tocá <strong>🔄 Refrescar</strong> para reintentar antes de enviar a Ecomm.
                 </div>`;
             }
             if (hayExtra) {
@@ -6165,6 +6243,7 @@
                                 <div style="font-size:0.82em;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${nombre}</div>
                                 <div style="font-size:0.72em;color:var(--text-secondary);margin-top:1px;">SKU ${p.codigo} · Ecomm: <span style="color:var(--primary);">${signo} → ${r.mod.newStock}</span></div>
                                 ${pendDesc ? `<div style="font-size:0.72em;margin-top:3px;">${pendDesc}</div>` : ''}
+                                ${r.unverified > 0 ? `<div style="font-size:0.72em;color:var(--danger);font-weight:700;margin-top:3px;">⚠️ ${r.unverified} venta${r.unverified!==1?'s':''} no verificada${r.unverified!==1?'s':''} — refrescá antes de enviar</div>` : ''}
                             </div>
                             ${r.adjust > 0 ? `<div style="flex-shrink:0;font-size:0.78em;color:var(--warning);font-weight:700;white-space:nowrap;">+${r.adjust} extra</div>` : ''}
                         </div>
@@ -6236,7 +6315,8 @@
                 if (btn) btn.style.display = 'block';
             }, 30000);
 
-            // El corte se trata como UTC (las fechas de la API también son UTC)
+            // Corte en hora Argentina; se compara como número de pared con las fechas de la DB
+            // (que vienen con "Z" engañoso). Ver nota en parseFechaMovimiento.
             const cutoffDate = cutoff ? new Date(cutoff + ':00Z') : null;
             _vsiProgress = { loaded: 0, total: mods.length };
             _updateVSIProgress();
@@ -6250,18 +6330,16 @@
                     // preCorteYaAplicado: si el usuario ya corrió "Ajustar ventas",
                     // el pre-corte está incluido en mod.newStock → solo sumamos post-corte para Ecomm
                     const preCorteYaAplicado = (mod.ajustePreCorte || 0);
-                    const result = { sku, mod, pendingUnits: 0, preCorteUnits: 0, postCorteUnits: 0, adjust: 0 };
+                    const result = { sku, mod, pendingUnits: 0, preCorteUnits: 0, postCorteUnits: 0, adjust: 0, unverified: 0 };
                     try {
                         let d;
                         try {
-                            const resp = await _fetchWithTimeout(`${WORKER_MOV_ECOMM}/movimientos?sku=${encodeURIComponent(sku)}&dias=7`, {}, 12000);
-                            d = await resp.json();
+                            d = await _fetchMovimientosEcomm(sku, 7);   // cache-bust + reintentos
                         } catch(fetchErr) {
                             result.timedOut = fetchErr.name === 'AbortError';
                             result.error = result.timedOut ? 'timeout' : (fetchErr.message || 'error');
                             _vsiProgress.loaded++; _updateVSIProgress(); return result;
                         }
-                        if (!d.ok) { _vsiProgress.loaded++; _updateVSIProgress(); return result; }
 
                         const movs = d.movimientos || [];
 
@@ -6284,18 +6362,22 @@
                         });
 
                         // Contar unidades sin imprimir en cada grupo — EN PARALELO, acotado
-                        // por el semáforo global para no saturar el proxy.
+                        // por el semáforo global. Las ventas que NO se pudieron resolver no se
+                        // descartan en silencio: se acumulan en `unver` y se avisan.
+                        let unverTotal = 0;
                         const contarUnidades = async (ventas) => {
                             const infos = await Promise.all(ventas.map(m => {
                                 const nro = String(m.nro_comprobante ?? m.Nro_comprobante_operacion ?? '');
-                                return resolverVentaEcommPool(nro, _cuentaHintMov(m)).catch(() => null);
+                                return resolverVentaEcommPool(nro, _cuentaHintMov(m))
+                                    .then(info => ({ info }))
+                                    .catch(err => ({ err }));
                             }));
                             let total = 0;
                             ventas.forEach((m, idx) => {
-                                const info = infos[idx];
-                                if (!info || info.notFound) return;
-                                if (esImpresoEcomm(info.substatus, info.status) !== false) return;
-                                total += _contarUnidadesMovimiento(m);
+                                const { info, err } = infos[idx];
+                                if (err || !info || info.notFound) { unverTotal++; return; }  // no verificada
+                                if (esImpresoEcomm(info.substatus, info.status) !== false) return; // impreso
+                                total += _contarUnidadesMovimiento(m);                  // pendiente
                             });
                             return total;
                         };
@@ -6306,6 +6388,7 @@
                         ]);
                         result.preCorteUnits = preU;
                         result.postCorteUnits = postU;
+                        result.unverified = unverTotal;
 
                         // Para Ecomm: si pre-corte ya fue aplicado via "Ajustar ventas",
                         // no lo sumamos de nuevo — solo sumamos el post-corte adicional
@@ -6363,7 +6446,7 @@
             // 1. Fetch movimientos (solo hoy, igual que la lógica real)
             let movs = [];
             try {
-                log(`📡 GET /movimientos?sku=${sku}&dias=1`);
+                log(`📡 GET /movimientos?sku=${sku}&dias=7`);
                 let d;
                 try {
                     const resp = await _fetchWithTimeout(`${WORKER_MOV_ECOMM}/movimientos?sku=${encodeURIComponent(sku)}&dias=7`, {}, 12000);
@@ -6388,7 +6471,7 @@
                 });
             } catch(e) { log('❌ fetch error:', e.message); return; }
 
-            // 2. Filtrar ML ventas (fechas de API en UTC, corte también UTC)
+            // 2. Filtrar ML ventas (corte y fechas DB en hora Argentina; se comparan como pared)
             const cutoffDate = cutoff ? new Date(cutoff + ':00Z') : null;
             log(`\n🕒 Corte: ${cutoff} → ${cutoffDate?.toISOString() ?? 'sin corte'}`);
 
