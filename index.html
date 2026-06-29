@@ -1341,7 +1341,10 @@
     </div>
 
     <div class="article-edit-bar" id="articleEditBar">
-        <div class="edit-bar-top" id="articleEditLabel">—</div>
+        <div class="edit-bar-top" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+            <span id="articleEditLabel">—</span>
+            <button onclick="abrirVentasSKU()" style="padding:3px 9px;background:var(--bg-input);border:1px solid var(--border);border-radius:6px;color:var(--text-secondary);font-size:0.72em;cursor:pointer;flex-shrink:0;touch-action:manipulation;white-space:nowrap;">📋 Ventas</button>
+        </div>
         <div class="edit-bar-controls">
             <button class="stock-btn minus" onclick="articleModify(-1)">−</button>
             <div class="edit-val" id="articleEditVal">0</div>
@@ -1744,7 +1747,7 @@
             const colorData = {};
             articleProds.forEach(p => {
                 if (!p.color) return;
-                const mod = state.modifications[p.codigo];
+                const mod = state.modifications[p.id];
                 const stock = mod !== undefined ? mod.newStock : (p.stock || 0);
                 if (!colorData[p.color]) {
                     colorData[p.color] = { color: p.color, totalStock: 0, imgUrl: '', hasModification: false };
@@ -1827,7 +1830,7 @@
             else if (state.stock === 'low') r = r.filter(p => p.stock > 0 && p.stock <= state.lowStockThreshold);
             else if (state.stock === 'no') r = r.filter(p => p.stock === 0);
             else if (state.stock === 'critical') r = r.filter(p => p.stock <= state.lowStockThreshold);
-            else if (state.stock === 'modified') r = r.filter(p => !!state.modifications[p.codigo]);
+            else if (state.stock === 'modified') r = r.filter(p => !!state.modifications[p.id]);
             
             if (state.search) {
                 const q = state.search.toLowerCase();
@@ -2003,7 +2006,7 @@
             else if (state.stock === 'low') r = r.filter(p => p.stock > 0 && p.stock <= state.lowStockThreshold);
             else if (state.stock === 'no') r = r.filter(p => p.stock === 0);
             else if (state.stock === 'critical') r = r.filter(p => p.stock <= state.lowStockThreshold);
-            else if (state.stock === 'modified') r = r.filter(p => !!state.modifications[p.codigo]);
+            else if (state.stock === 'modified') r = r.filter(p => !!state.modifications[p.id]);
 
             if (state.search) {
                 const q = state.search.toLowerCase();
@@ -3428,7 +3431,7 @@
             if (state.stock === 'modified' || state.location || state.colors.length || state.sizes.length) {
                 const loc = state.location.toLowerCase();
                 arts = arts.filter(a => _homeArticleProducts(a.name).some(p => {
-                    if (state.stock === 'modified' && !state.modifications[p.codigo]) return false;
+                    if (state.stock === 'modified' && !state.modifications[p.id]) return false;
                     if (loc && !(p.ubicacion || '').toLowerCase().includes(loc)) return false;
                     if (state.colors.length && !state.colors.includes(p.color)) return false;
                     if (state.sizes.length && !state.sizes.includes(p.talle)) return false;
@@ -3488,7 +3491,7 @@
             const product = PRODUCTS.find(p => p.id === id);
             if (!product) return;
             
-            const mod = state.modifications[product.codigo];
+            const mod = state.modifications[product.id];
             const isModified = !!mod;
             const currentStock = isModified ? mod.newStock : product.stock;
             const stockClass = currentStock > 5 ? 'high' : currentStock > 0 ? 'med' : 'low';
@@ -3616,7 +3619,7 @@
             // el filtro activo quedan resaltados con un aro de color; el resto, atenuado. Así no
             // se pierde de vista que, por ejemplo, "también hay stock normal en el talle L".
             function matchesStockFilter(p) {
-                const mod = state.modifications[p.codigo];
+                const mod = state.modifications[p.id];
                 const stock = mod ? mod.newStock : p.stock;
                 if (state.stock === 'yes') return stock > 0;
                 if (state.stock === 'low') return stock > 0 && stock <= state.lowStockThreshold;
@@ -3658,7 +3661,7 @@
             // Calc total stock
             let totalStock = 0, modCount = 0;
             allProducts.forEach(p => {
-                const mod = state.modifications[p.codigo];
+                const mod = state.modifications[p.id];
                 totalStock += mod ? mod.newStock : p.stock;
                 if (mod) modCount++;
             });
@@ -3671,7 +3674,7 @@
             colorNamesAll.forEach(color => {
                 let s = 0;
                 colorGroups[color].forEach(p => {
-                    const mod = state.modifications[p.codigo];
+                    const mod = state.modifications[p.id];
                     s += mod ? mod.newStock : p.stock;
                 });
                 colorStockMap[color] = s;
@@ -3704,7 +3707,7 @@
                     const prods = colorGroups[color];
                     const p = prods[0];
                     if (!p) return;
-                    const mod = state.modifications[p.codigo];
+                    const mod = state.modifications[p.id];
                     const isModified = !!mod;
                     const currentStock = isModified ? mod.newStock : p.stock;
                     const stockClass = currentStock > 5 ? 'high' : currentStock > 0 ? 'med' : 'low';
@@ -3787,7 +3790,7 @@
                             html += '<div class="article-size-cell" style="visibility:hidden;"><div class="asc-size">' + size + '</div><div class="asc-stock">0</div></div>';
                             return;
                         }
-                        const mod = state.modifications[p.codigo];
+                        const mod = state.modifications[p.id];
                         const isModified = !!mod;
                         const currentStock = isModified ? mod.newStock : p.stock;
                         const stockClass = currentStock > 5 ? 'high' : currentStock > 0 ? 'med' : 'low';
@@ -3891,7 +3894,7 @@
             const product = PRODUCTS.find(p => p.id === articleSelectedId);
             if (!product) return;
 
-            const mod = state.modifications[product.codigo];
+            const mod = state.modifications[product.id];
             const currentStock = mod ? mod.newStock : product.stock;
             const esIgual = mod && mod.tipo === 'igual';
 
@@ -3907,7 +3910,7 @@
         }
         
         function articleRefreshCell(product) {
-            const mod = state.modifications[product.codigo];
+            const mod = state.modifications[product.id];
             const currentStock = mod ? mod.newStock : product.stock;
             const stockClass = currentStock > 5 ? 'high' : currentStock > 0 ? 'med' : 'low';
             const isZero = currentStock <= 0;
@@ -3939,27 +3942,28 @@
             const product = PRODUCTS.find(p => p.id === articleSelectedId);
             if (!product) return;
             const sku = product.codigo;
-            
+            const pid = product.id;
+
             const now = Date.now();
             if (now - lastModifyTime < 100) return;
             lastModifyTime = now;
 
-            let mod = state.modifications[sku];
+            let mod = state.modifications[pid];
             if (!mod) {
                 const base = product.stock < 0 && delta > 0 ? 0 : product.stock;
                 mod = { oldStock: product.stock, newStock: Math.max(0, base + delta), product };
             } else {
                 mod.newStock = Math.max(0, (mod.newStock < 0 && delta > 0) ? delta : mod.newStock + delta);
             }
-            
+
             if (mod.newStock === mod.oldStock) {
-                delete state.modifications[sku];
+                delete state.modifications[pid];
             } else {
                 // Si había un ajuste aplicado, lo invalidamos — el usuario cambió la base
                 delete mod.stockAntesDeAjuste;
                 delete mod.ajustePreCorte;
                 delete mod.ajusteCorteHora;
-                state.modifications[sku] = mod;
+                state.modifications[pid] = mod;
             }
 
             haptic('light');
@@ -3967,7 +3971,7 @@
             articleRefreshCell(product);
             _refreshModsModalIfOpen();
 
-            const newStock = state.modifications[sku] ? state.modifications[sku].newStock : product.stock;
+            const newStock = state.modifications[pid] ? state.modifications[pid].newStock : product.stock;
             const realChange = newStock - product.stock;
             showStockFlash(realChange, (product.color || '-') + ' · T:' + (product.talle || '-'), newStock, getProductImage(product.codigo, product));
         }
@@ -3977,12 +3981,13 @@
             const product = PRODUCTS.find(p => p.id === articleSelectedId);
             if (!product) return;
             const sku = product.codigo;
-            
-            const currentStock = state.modifications[sku] ? state.modifications[sku].newStock : product.stock;
+            const pid = product.id;
+
+            const currentStock = state.modifications[pid] ? state.modifications[pid].newStock : product.stock;
             if (currentStock === 0) { toast('Ya está en 0'); return; }
 
-            state.modifications[sku] = { oldStock: product.stock, newStock: 0, product };
-            if (product.stock === 0) delete state.modifications[sku];
+            state.modifications[pid] = { oldStock: product.stock, newStock: 0, product };
+            if (product.stock === 0) delete state.modifications[pid];
 
             haptic('medium');
             saveModifications();
@@ -3997,11 +4002,12 @@
             const product = PRODUCTS.find(p => p.id === articleSelectedId);
             if (!product) return;
             const sku = product.codigo;
-            const mod = state.modifications[sku];
+            const pid = product.id;
+            const mod = state.modifications[pid];
 
             // Toggle off si ya está en modo "igual"
             if (mod && mod.tipo === 'igual') {
-                delete state.modifications[sku];
+                delete state.modifications[pid];
                 haptic('light'); saveModifications(); articleRefreshCell(product); updateModificationCount(); _refreshModsModalIfOpen();
                 toast('↩️ Confirmación Ecomm quitada');
                 return;
@@ -4011,7 +4017,7 @@
                 toast('⚠️ Ya tiene un cambio de stock. Enviá a Ecomm desde ahí.', 'warning');
                 return;
             }
-            state.modifications[sku] = { oldStock: product.stock, newStock: product.stock, product, tipo: 'igual' };
+            state.modifications[pid] = { oldStock: product.stock, newStock: product.stock, product, tipo: 'igual' };
             haptic('medium'); saveModifications(); articleRefreshCell(product); updateModificationCount(); _refreshModsModalIfOpen();
             toast('✓ Stock confirmado — se verificará en Ecomm', 'success');
         }
@@ -4024,14 +4030,15 @@
             const product = PRODUCTS.find(p => p.id === articleSelectedId);
             if (!product) { articleCloseEditBar(); return; }
             const sku = product.codigo;
+            const pid = product.id;
             const raw = ($('articleManualInput').value || '').trim();
             const value = parseInt(raw);
 
             if (raw === '') { articleCloseEditBar(); return; }   // sin tipear → solo cerrar
             if (isNaN(value) || value < 0) { toast('⚠️ Cantidad inválida', 'warning'); return; }
 
-            state.modifications[sku] = { oldStock: product.stock, newStock: value, product };
-            if (value === product.stock) delete state.modifications[sku];
+            state.modifications[pid] = { oldStock: product.stock, newStock: value, product };
+            if (value === product.stock) delete state.modifications[pid];
 
             haptic('medium');
             saveModifications();
@@ -4042,6 +4049,150 @@
             toast('✓ ' + value + '  ' + (product.color || '') + ' T:' + (product.talle || ''));
             articleCloseEditBar();   // confirma y cierra
         }
+
+        // ─── VENTAS RECIENTES POR SKU ────────────────────────────────────────────
+        let _ventasSKUActive = null; // sku string of current open panel
+
+        async function abrirVentasSKU() {
+            if (!articleSelectedId) return;
+            const product = PRODUCTS.find(p => p.id === articleSelectedId);
+            if (!product) return;
+            const sku = product.codigo;
+            _ventasSKUActive = sku;
+
+            const nombre = product.titulo || product.articulo || ('SKU ' + sku);
+            $('modalTitle').textContent = '📋 ' + nombre;
+            $('modalBody').innerHTML = '<div style="text-align:center;padding:24px 0;color:var(--text-secondary);">⏳ Consultando movimientos...</div>';
+            showModal();
+
+            try {
+                const resp = await _fetchWithTimeout(
+                    `${WORKER_MOV_ECOMM}/movimientos?sku=${encodeURIComponent(sku)}&dias=7`, {}, 12000
+                );
+                const d = await resp.json();
+                if (!d.ok) throw new Error('API error');
+
+                const ventasML = (d.movimientos || []).filter(m => {
+                    const tipo = String(m.tipo_movimiento ?? '').toLowerCase();
+                    return tipo.includes('ventas_meli') || tipo.includes('mercado libre')
+                        || String(m.es_combo ?? '').toLowerCase() === 'si';
+                });
+
+                if (_ventasSKUActive !== sku) return; // user opened another product
+                if (!ventasML.length) {
+                    $('modalBody').innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-secondary);">Sin ventas ML en los últimos 7 días</div>`;
+                    return;
+                }
+
+                // statuses: null=pending, 'sinimprimir', 'impreso', 'cancelada', 'error'
+                const statuses = ventasML.map(() => null);
+                _renderVentasSKUModal(sku, ventasML, statuses);
+                await _resolveVentasSKUStatuses(sku, ventasML, statuses);
+
+            } catch(e) {
+                if (_ventasSKUActive === sku && $('modalOverlay').classList.contains('show')) {
+                    $('modalBody').innerHTML = '<div style="text-align:center;padding:24px;color:var(--danger);">⚠️ Error al consultar ventas</div>';
+                }
+            }
+        }
+
+        function _renderVentasSKUModal(sku, movs, statuses) {
+            if (_ventasSKUActive !== sku || !$('modalOverlay').classList.contains('show')) return;
+
+            const pendingCount = statuses.filter(s => s === 'sinimprimir').length;
+            const loadingCount = statuses.filter(s => s === null).length;
+
+            let header = `<div style="font-size:0.72em;color:var(--text-secondary);margin-bottom:10px;">SKU ${sku} · últimos 7 días · ${movs.length} movimiento${movs.length !== 1 ? 's' : ''}</div>`;
+            if (pendingCount > 0) {
+                header += `<div style="padding:7px 10px;background:rgba(251,191,36,0.1);border:1px solid var(--warning);border-radius:6px;margin-bottom:10px;font-size:0.78em;color:var(--warning);font-weight:700;">📋 ${pendingCount} sin imprimir</div>`;
+            } else if (loadingCount === 0) {
+                header += `<div style="padding:7px 10px;background:rgba(74,222,128,0.08);border-radius:6px;margin-bottom:10px;font-size:0.78em;color:var(--success);">✅ Todo impreso / en camino</div>`;
+            }
+
+            let rows = '';
+            movs.forEach((m, i) => {
+                const tipo = String(m.tipo_movimiento ?? '').toLowerCase();
+                const esCancel = tipo.includes('cancellat');
+                const esCombo = String(m.es_combo ?? '').toLowerCase() === 'si';
+                const uds = Number(m.Unidades_movidas ?? 1);
+                const nro = String(m.nro_comprobante ?? m.Nro_comprobante_operacion ?? '');
+                const tiendaMatch = (m.tipo_movimiento ?? '').match(/:\s*(.+)$/);
+                const tienda = tiendaMatch ? tiendaMatch[1].trim() : '';
+
+                let fechaStr = '—';
+                const fechaRaw = m.fecha ?? m.Fecha;
+                if (fechaRaw) {
+                    try {
+                        fechaStr = new Date(fechaRaw).toLocaleString('es-AR', {
+                            timeZone: 'America/Argentina/Buenos_Aires',
+                            day: '2-digit', month: '2-digit',
+                            hour: '2-digit', minute: '2-digit'
+                        });
+                    } catch {}
+                }
+
+                const st = statuses[i];
+                let statusHtml;
+                if (esCancel) {
+                    statusHtml = '<span style="color:var(--danger);font-size:0.7em;">✗ Cancelada</span>';
+                } else if (st === null) {
+                    statusHtml = '<span style="color:var(--text-secondary);font-size:0.72em;">⏳</span>';
+                } else if (st === 'sinimprimir') {
+                    statusHtml = '<span style="color:var(--warning);font-weight:700;font-size:0.72em;">📋 Sin imprimir</span>';
+                } else if (st === 'error') {
+                    statusHtml = '<span style="color:var(--danger);font-size:0.72em;">⚠️ Error</span>';
+                } else {
+                    statusHtml = '<span style="color:var(--text-secondary);font-size:0.72em;">🖨️ Impreso</span>';
+                }
+
+                const borderCol = st === 'sinimprimir' ? 'var(--warning)' : 'var(--border)';
+                const bgCol = esCancel ? 'rgba(239,68,68,0.04)' : '';
+
+                rows += `<div style="padding:8px 0;border-bottom:1px solid ${borderCol};${bgCol ? 'background:' + bgCol + ';' : ''}">
+                    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+                        <div style="min-width:0;flex:1;">
+                            <div style="font-size:0.8em;color:var(--text);">${fechaStr}${esCombo && !esCancel ? ' <span style="font-size:0.72em;background:var(--purple);color:white;padding:1px 5px;border-radius:3px;vertical-align:middle;">pack</span>' : ''}</div>
+                            <div style="font-size:0.7em;color:var(--text-secondary);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${tienda}${nro ? ' · #' + nro : ''}</div>
+                        </div>
+                        <div style="flex-shrink:0;text-align:right;">
+                            <div style="font-size:0.9em;font-weight:700;color:${esCancel ? 'var(--text-secondary)' : 'var(--text)'};">${esCancel ? '+' : '−'}${uds} ud${uds !== 1 ? 's' : ''}</div>
+                            <div style="margin-top:2px;">${statusHtml}</div>
+                        </div>
+                    </div>
+                </div>`;
+            });
+
+            $('modalBody').innerHTML = header + rows;
+        }
+
+        async function _resolveVentasSKUStatuses(sku, movs, statuses) {
+            try {
+                await Promise.all(Object.values(ML_PROXIES_ECOMM).map(p => getMLTokEcomm(p).catch(() => {})));
+            } catch {}
+
+            // Resolver todas EN PARALELO (acotado por el semáforo global); cada una actualiza
+            // el modal apenas termina, así el usuario ve el progreso en vivo.
+            await Promise.all(movs.map(async (m, i) => {
+                const tipo = String(m.tipo_movimiento ?? '').toLowerCase();
+                if (tipo.includes('cancellat')) { statuses[i] = 'cancelada'; _renderVentasSKUModal(sku, movs, statuses); return; }
+
+                const nro = String(m.nro_comprobante ?? m.Nro_comprobante_operacion ?? '');
+                if (!nro) { statuses[i] = 'error'; _renderVentasSKUModal(sku, movs, statuses); return; }
+
+                try {
+                    const info = await resolverVentaEcommPool(nro, _cuentaHintMov(m));
+                    if (!info || info.notFound) {
+                        statuses[i] = 'impreso';
+                    } else {
+                        statuses[i] = esImpresoEcomm(info.substatus, info.status) === false ? 'sinimprimir' : 'impreso';
+                    }
+                } catch {
+                    statuses[i] = 'error';
+                }
+                _renderVentasSKUModal(sku, movs, statuses);
+            }));
+        }
+        // ─────────────────────────────────────────────────────────────────────────
 
         function updateModificationCount() {
             const count = Object.keys(state.modifications).length;
@@ -4709,9 +4860,10 @@
             const timeout = setTimeout(() => controller.abort(), 15000);
 
             try {
+                const _bust = Date.now();
                 const [prodResp, imgResp] = await Promise.all([
-                    fetch(CLOUDFLARE_TEST_URL, { signal: controller.signal, cache: 'no-store' }),
-                    fetch(CLOUDFLARE_TEST_URL + '?mode=images', { signal: controller.signal, cache: 'no-store' })
+                    fetch(CLOUDFLARE_TEST_URL + '?_t=' + _bust, { signal: controller.signal, cache: 'no-store' }),
+                    fetch(CLOUDFLARE_TEST_URL + '?mode=images&_t=' + _bust, { signal: controller.signal, cache: 'no-store' })
                 ]);
                 clearTimeout(timeout);
                 const data = await prodResp.json();
@@ -4918,16 +5070,18 @@
         // #15 Reconcile modifications after sync — update product refs, drop stale mods
         function reconcileModifications() {
             const newMods = {};
-            Object.entries(state.modifications).forEach(([sku, mod]) => {
-                const freshProduct = PRODUCTS.find(p => p.codigo === sku);
-                if (freshProduct) {
-                    if (freshProduct.stock === mod.newStock) return; // server caught up
-                    newMods[sku] = {
-                        oldStock: freshProduct.stock,
-                        newStock: mod.newStock,
-                        product: freshProduct
-                    };
-                }
+            Object.entries(state.modifications).forEach(([key, mod]) => {
+                // Support new format (keyed by product.id) AND old format (keyed by product.codigo)
+                const freshProduct = PRODUCTS.find(p => String(p.id) === String(key))
+                                  || PRODUCTS.find(p => p.codigo === String(key));
+                if (!freshProduct) return; // product removed from catalog
+                // Drop non-igual mods when server already has the target stock (server caught up)
+                if (mod.tipo !== 'igual' && freshProduct.stock === mod.newStock) return;
+                newMods[freshProduct.id] = {
+                    ...mod,
+                    oldStock: freshProduct.stock,
+                    product: freshProduct
+                };
             });
             state.modifications = newMods;
             saveModifications();
@@ -5262,9 +5416,17 @@
             return isNaN(dt) ? null : dt;
         }
 
-        async function resolverVentaEcomm(orderId) {
+        // hint: nombre de cuenta probable ('Mikra' | 'Chaya') deducido de la tienda del
+        // movimiento — se prueba PRIMERO para evitar el 403 + reintento en la otra cuenta.
+        async function resolverVentaEcomm(orderId, hint) {
             if (_mlVentaEcomm.has(orderId)) return _mlVentaEcomm.get(orderId);
-            for (const [, proxy] of Object.entries(ML_PROXIES_ECOMM)) {
+
+            let entries = Object.entries(ML_PROXIES_ECOMM);
+            if (hint && ML_PROXIES_ECOMM[hint]) {
+                entries = entries.filter(e => e[0] === hint).concat(entries.filter(e => e[0] !== hint));
+            }
+
+            for (const [, proxy] of entries) {
                 try {
                     const { token } = await getMLTokEcomm(proxy);
                     const r = await _fetchWithTimeout(`${proxy}/api/orders/${orderId}`, {
@@ -5278,8 +5440,11 @@
                     let substatus = order.shipping?.substatus || null;
                     let status = order.shipping?.status || null;
 
-                    // Segunda llamada a shipments para obtener el substatus real
-                    if (sid) {
+                    // Si el status del pedido YA es terminal (shipped/delivered/cancelled…),
+                    // no hace falta la 2ª llamada a /shipments: ya sabemos que NO está pendiente
+                    // de imprimir. Solo refinamos con shipments cuando el status sigue "en juego".
+                    const statusEnJuego = !status || ['ready_to_ship', 'pending', 'handling'].includes(status);
+                    if (sid && statusEnJuego) {
                         try {
                             const { token: tok2 } = await getMLTokEcomm(proxy);
                             const rs = await _fetchWithTimeout(`${proxy}/api/shipments/${sid}`, {
@@ -5301,6 +5466,34 @@
             const info = { notFound: true };
             _mlVentaEcomm.set(orderId, info);
             return info;
+        }
+
+        // Deduce la cuenta probable a partir de la tienda que viene en el movimiento.
+        function _cuentaHintMov(m) {
+            const t = String(m.tipo_movimiento ?? m.Origen ?? '').toUpperCase();
+            if (t.includes('MIRADOS')) return 'Chaya';
+            if (t.includes('MIKRA'))   return 'Mikra';
+            return null;
+        }
+
+        // ── Semáforo global para llamadas a ML ──────────────────────────────────
+        // Limita cuántas resoluciones de venta corren a la vez contra los proxies, sin
+        // importar cuántos SKUs/órdenes se disparen en paralelo. Evita saturar / rate-limit.
+        const ML_MAX_CONCURRENT = 8;
+        let _mlSemActive = 0;
+        const _mlSemQueue = [];
+        function _mlSemAcquire() {
+            if (_mlSemActive < ML_MAX_CONCURRENT) { _mlSemActive++; return Promise.resolve(); }
+            return new Promise(res => _mlSemQueue.push(res));
+        }
+        function _mlSemRelease() {
+            _mlSemActive--;
+            if (_mlSemQueue.length) { _mlSemActive++; _mlSemQueue.shift()(); }
+        }
+        async function resolverVentaEcommPool(orderId, hint) {
+            await _mlSemAcquire();
+            try { return await resolverVentaEcomm(orderId, hint); }
+            finally { _mlSemRelease(); }
         }
 
         // Substatus de ML que cuentan como PENDIENTE (todavía hay que imprimir/procesar).
@@ -5325,6 +5518,7 @@
         let _vsiProgress = { loaded: 0, total: 0 };
         let _lastEcommAdjustments = null;
         let _pendingModUpdate = null;
+        let _vsiAbortTout = null;
 
         // ═══════════════════════════════════════════════════════════════
         // PICKER DE HORARIO DE CORTE — reemplaza datetime-local incómodo
@@ -5357,19 +5551,20 @@
                 <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap;">
                     ${dayBtn('Hoy', isToday, 0)}
                     ${dayBtn('Ayer', isYest, -1)}
-                    ${!isToday && !isYest ? `<span style="font-size:0.75em;color:var(--warning);padding:6px 8px;border:1px solid var(--warning);border-radius:7px;">${date}</span>` : ''}
+                    <input type="date" id="${prefix}CutoffDate" value="${date}"
+                        style="padding:6px 8px;background:var(--bg-input);border:1px solid ${!isToday && !isYest ? 'var(--warning)' : 'var(--border)'};border-radius:7px;color:var(--text);font-size:0.82em;outline:none;touch-action:manipulation;"
+                        onchange="_cutoffPickerChange('${prefix}', null)">
                 </div>
                 <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                     <span style="font-size:0.8em;color:var(--text-secondary);white-space:nowrap;">🕒 Hora de corte:</span>
                     <input type="time" id="${prefix}CutoffTime" value="${time}"
                         style="padding:9px 10px;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:1em;outline:none;min-width:100px;"
-                        onchange="_cutoffPickerChange('${prefix}','${date}')">
+                        onchange="_cutoffPickerChange('${prefix}', null)">
                     <button onclick="_setCutoffNow('${prefix}')"
                         style="padding:7px 11px;background:var(--bg-input);border:1px solid var(--border);border-radius:7px;color:var(--text-secondary);font-size:0.78em;cursor:pointer;touch-action:manipulation;white-space:nowrap;">
                         ⏱ Ahora
                     </button>
-                </div>
-                <input type="hidden" id="${prefix}CutoffDate" value="${date}">`;
+                </div>`;
         }
 
         function _cutoffPickerChange(prefix, dateFallback) {
@@ -5415,7 +5610,9 @@
                            color:${active ? 'white' : 'var(--text)'};">${label}</button>`;
             return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:7px;flex-wrap:wrap;">
                         ${dayBtn('Hoy', isToday, 0)} ${dayBtn('Ayer', isYest, -1)}
-                        ${!isToday && !isYest ? `<span style="font-size:0.75em;color:var(--warning);">${date}</span>` : ''}
+                        <input type="date" id="setEcommCutoffDate" value="${date}"
+                            style="padding:5px 8px;background:var(--bg-input);border:1px solid ${!isToday && !isYest ? 'var(--warning)' : 'var(--border)'};border-radius:7px;color:var(--text);font-size:0.78em;outline:none;touch-action:manipulation;"
+                            onchange="_syncSettingsCutoff()">
                     </div>
                     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                         <span style="font-size:0.78em;color:var(--text-secondary);">🕒</span>
@@ -5424,8 +5621,7 @@
                             onchange="_syncSettingsCutoff()">
                         <button type="button" onclick="_setSettingsCutoffNow()"
                             style="padding:6px 10px;background:var(--bg-input);border:1px solid var(--border);border-radius:7px;color:var(--text-secondary);font-size:0.75em;cursor:pointer;touch-action:manipulation;">⏱ Ahora</button>
-                    </div>
-                    <input type="hidden" id="setEcommCutoffDate" value="${date}">`;
+                    </div>`;
         }
 
         function _setSettingsCutoffDay(offset) {
@@ -5495,7 +5691,7 @@
         // ═══════════════════════════════════════════════════════════════
 
         function abrirAjustarVentas() {
-            const mods = Object.values(state.modifications).filter(m => m.tipo !== 'igual');
+            const mods = Object.values(state.modifications);
             if (!mods.length) { toast('No hay modificaciones para ajustar', 'warning'); return; }
 
             _avResultados = [];
@@ -5519,7 +5715,7 @@
         function onAVCutoffChange(val) {
             state.ecommCutoff = val;
             try { localStorage.setItem('mikra_ecomm_cutoff', val); } catch(e) {}
-            const mods = Object.values(state.modifications).filter(m => m.tipo !== 'igual');
+            const mods = Object.values(state.modifications);
             _avProgress = { loaded: 0, total: mods.length };
             _mlVentaEcomm = new Map();
             renderAVModal('loading', val);
@@ -5689,8 +5885,8 @@
 
             _avResultados.forEach(r => {
                 if (r.adjust === 0) return;
-                const sku = r.sku;
-                const mod = state.modifications[sku];
+                const pid = r.mod.product.id;
+                const mod = state.modifications[pid];
                 if (!mod) return;
 
                 // Siempre usar el stock original del usuario como base
@@ -5698,8 +5894,11 @@
                 const baseStock = mod.stockAntesDeAjuste ?? mod.newStock;
                 const adjustedNew = Math.max(0, baseStock - r.adjust);
 
-                state.modifications[sku] = {
-                    ...mod,
+                // Si era "igual" (stock confirmado sin cambio) y ahora descontamos ventas,
+                // pasa a ser un cambio REAL negativo → sacamos el flag 'igual'.
+                const { tipo, ...rest } = mod;
+                state.modifications[pid] = {
+                    ...rest,
                     newStock: adjustedNew,
                     stockAntesDeAjuste: baseStock,   // preservar el valor original
                     ajustePreCorte: r.adjust,         // cuánto se descontó
@@ -5725,9 +5924,9 @@
             let restored = 0;
             mods.forEach(mod => {
                 if (mod.stockAntesDeAjuste != null) {
-                    const sku = mod.product.codigo;
+                    const pid = mod.product.id;
                     const { stockAntesDeAjuste, ajustePreCorte, ajusteCorteHora, ...rest } = mod;
-                    state.modifications[sku] = { ...rest, newStock: stockAntesDeAjuste };
+                    state.modifications[pid] = { ...rest, newStock: stockAntesDeAjuste };
                     restored++;
                 }
             });
@@ -5742,7 +5941,9 @@
         }
 
         async function consultarVentasPreCorte(cutoff) {
-            const mods = Object.values(state.modifications).filter(m => m.tipo !== 'igual');
+            // Incluye TAMBIÉN los "igual": aunque el stock no cambió, si hay ventas sin imprimir
+            // antes del corte hay que descontarlas igual (ajuste negativo).
+            const mods = Object.values(state.modifications);
             if (!mods.length) { cerrarAjustarVentas(); return; }
 
             const cutoffDate = cutoff ? new Date(cutoff + ':00Z') : null;
@@ -5759,7 +5960,7 @@
                     try {
                         let d;
                         try {
-                            const resp = await _fetchWithTimeout(`${WORKER_MOV_ECOMM}/movimientos?sku=${encodeURIComponent(sku)}&dias=1`, {}, 12000);
+                            const resp = await _fetchWithTimeout(`${WORKER_MOV_ECOMM}/movimientos?sku=${encodeURIComponent(sku)}&dias=7`, {}, 12000);
                             d = await resp.json();
                         } catch(fetchErr) {
                             result.timedOut = fetchErr.name === 'AbortError';
@@ -5785,16 +5986,18 @@
                         });
 
                         if (ventasML.length) {
-                            let totalUnits = 0;
-                            for (const m of ventasML) {
+                            // Resolver todas las ventas EN PARALELO (acotado por el semáforo global)
+                            const infos = await Promise.all(ventasML.map(m => {
                                 const nro = String(m.nro_comprobante ?? m.Nro_comprobante_operacion ?? '');
-                                try {
-                                    const info = await resolverVentaEcomm(nro);
-                                    if (!info || info.notFound) continue;
-                                    if (esImpresoEcomm(info.substatus, info.status) !== false) continue;
-                                } catch { continue; }
+                                return resolverVentaEcommPool(nro, _cuentaHintMov(m)).catch(() => null);
+                            }));
+                            let totalUnits = 0;
+                            ventasML.forEach((m, idx) => {
+                                const info = infos[idx];
+                                if (!info || info.notFound) return;
+                                if (esImpresoEcomm(info.substatus, info.status) !== false) return;
                                 totalUnits += _contarUnidadesMovimiento(m);
-                            }
+                            });
                             result.pendingUnits = totalUnits;
                             result.adjust = totalUnits;
                         }
@@ -5826,6 +6029,7 @@
         }
 
         function cerrarVerificacionVentas() {
+            if (_vsiAbortTout) { clearTimeout(_vsiAbortTout); _vsiAbortTout = null; }
             $('ventasSiOverlay').classList.remove('show');
         }
 
@@ -5863,6 +6067,13 @@
                         <div style="background:rgba(255,255,255,0.08);border-radius:4px;height:5px;overflow:hidden;">
                             <div id="vsiProgressBar" style="height:100%;width:${pct}%;background:var(--purple);border-radius:4px;transition:width 0.25s;"></div>
                         </div>
+                    </div>
+                    <div id="vsiAbortBtn" style="display:none;text-align:center;margin-top:10px;">
+                        <div style="font-size:0.75em;color:var(--text-secondary);margin-bottom:6px;">Está tardando más de lo normal.</div>
+                        <button onclick="omitirVerificacionVentas()"
+                            style="padding:8px 18px;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;color:var(--text-secondary);font-size:0.82em;font-weight:700;cursor:pointer;">
+                            ⏹ Abortar y omitir
+                        </button>
                     </div>
                 `;
             } else if (estado === 'ready') {
@@ -6018,6 +6229,13 @@
             const mods = Object.values(state.modifications);
             if (!mods.length) { cerrarVerificacionVentas(); return; }
 
+            // Abort timer: mostrar botón de abortar después de 30s
+            if (_vsiAbortTout) clearTimeout(_vsiAbortTout);
+            _vsiAbortTout = setTimeout(() => {
+                const btn = $('vsiAbortBtn');
+                if (btn) btn.style.display = 'block';
+            }, 30000);
+
             // El corte se trata como UTC (las fechas de la API también son UTC)
             const cutoffDate = cutoff ? new Date(cutoff + ':00Z') : null;
             _vsiProgress = { loaded: 0, total: mods.length };
@@ -6036,7 +6254,7 @@
                     try {
                         let d;
                         try {
-                            const resp = await _fetchWithTimeout(`${WORKER_MOV_ECOMM}/movimientos?sku=${encodeURIComponent(sku)}&dias=1`, {}, 12000);
+                            const resp = await _fetchWithTimeout(`${WORKER_MOV_ECOMM}/movimientos?sku=${encodeURIComponent(sku)}&dias=7`, {}, 12000);
                             d = await resp.json();
                         } catch(fetchErr) {
                             result.timedOut = fetchErr.name === 'AbortError';
@@ -6065,23 +6283,29 @@
                             }
                         });
 
-                        // Contar unidades sin imprimir en cada grupo (secuencial para no saturar proxy)
+                        // Contar unidades sin imprimir en cada grupo — EN PARALELO, acotado
+                        // por el semáforo global para no saturar el proxy.
                         const contarUnidades = async (ventas) => {
-                            let total = 0;
-                            for (const m of ventas) {
+                            const infos = await Promise.all(ventas.map(m => {
                                 const nro = String(m.nro_comprobante ?? m.Nro_comprobante_operacion ?? '');
-                                try {
-                                    const info = await resolverVentaEcomm(nro);
-                                    if (!info || info.notFound) continue;
-                                    if (esImpresoEcomm(info.substatus, info.status) !== false) continue;
-                                } catch { continue; }
+                                return resolverVentaEcommPool(nro, _cuentaHintMov(m)).catch(() => null);
+                            }));
+                            let total = 0;
+                            ventas.forEach((m, idx) => {
+                                const info = infos[idx];
+                                if (!info || info.notFound) return;
+                                if (esImpresoEcomm(info.substatus, info.status) !== false) return;
                                 total += _contarUnidadesMovimiento(m);
-                            }
+                            });
                             return total;
                         };
 
-                        result.preCorteUnits = await contarUnidades(ventasPreCorte);
-                        result.postCorteUnits = await contarUnidades(ventasPostCorte);
+                        const [preU, postU] = await Promise.all([
+                            contarUnidades(ventasPreCorte),
+                            contarUnidades(ventasPostCorte)
+                        ]);
+                        result.preCorteUnits = preU;
+                        result.postCorteUnits = postU;
 
                         // Para Ecomm: si pre-corte ya fue aplicado via "Ajustar ventas",
                         // no lo sumamos de nuevo — solo sumamos el post-corte adicional
@@ -6098,10 +6322,12 @@
                     return result;
                 }));
 
+                if (_vsiAbortTout) { clearTimeout(_vsiAbortTout); _vsiAbortTout = null; }
                 const currentCutoff = $('vsiCutoffInput')?.value || cutoff;
                 renderVSIModal('ready', currentCutoff);
 
             } catch(e) {
+                if (_vsiAbortTout) { clearTimeout(_vsiAbortTout); _vsiAbortTout = null; }
                 renderVSIModal('error', cutoff);
             }
         }
@@ -6140,7 +6366,7 @@
                 log(`📡 GET /movimientos?sku=${sku}&dias=1`);
                 let d;
                 try {
-                    const resp = await _fetchWithTimeout(`${WORKER_MOV_ECOMM}/movimientos?sku=${encodeURIComponent(sku)}&dias=1`, {}, 12000);
+                    const resp = await _fetchWithTimeout(`${WORKER_MOV_ECOMM}/movimientos?sku=${encodeURIComponent(sku)}&dias=7`, {}, 12000);
                     d = await resp.json();
                 } catch(fe) {
                     log(`❌ ${fe.name === 'AbortError' ? 'TIMEOUT (>12s) — worker sin respuesta' : 'fetch error: ' + fe.message}`); return;
@@ -6278,12 +6504,14 @@
         function ofrecerActualizarModificaciones(adjustments) {
             const changes = [];
             Object.entries(adjustments).forEach(([sku, adj]) => {
-                const mod = state.modifications[sku];
+                // adjustments is keyed by product.codigo (SKU); find mod by matching product.codigo
+                const mod = Object.values(state.modifications).find(m => m.product && m.product.codigo === sku);
                 if (!mod || adj === 0) return;
+                const pid = mod.product.id;
                 const adjustedNew = Math.max(0, mod.newStock - adj);
                 const p = mod.product;
                 const nombre = (p.titulo || p.articulo || '') + (p.color ? ` · ${p.color}` : '') + (p.talle ? ` T.${p.talle}` : '');
-                changes.push({ sku, adj, mod, adjustedNew, nombre });
+                changes.push({ pid, sku, adj, mod, adjustedNew, nombre });
             });
             if (!changes.length) return;
             _pendingModUpdate = changes;
@@ -6315,9 +6543,9 @@
             if (!_pendingModUpdate) return;
             _pendingModUpdate.forEach(c => {
                 if (c.adjustedNew === c.mod.oldStock) {
-                    delete state.modifications[c.sku];
+                    delete state.modifications[c.pid];
                 } else {
-                    state.modifications[c.sku] = { ...c.mod, newStock: c.adjustedNew };
+                    state.modifications[c.pid] = { ...c.mod, newStock: c.adjustedNew };
                 }
             });
             _pendingModUpdate = null;
