@@ -688,6 +688,7 @@
         body.modal-open .container,
         body.modal-open .header-bar,
         body.modal-open .bottom-bar,
+        body.modal-open .article-edit-bar,
         body.modal-open #bbSheet { visibility: hidden; }
         
         .modal {
@@ -4052,6 +4053,14 @@
 
         // ─── VENTAS RECIENTES POR SKU ────────────────────────────────────────────
         let _ventasSKUActive = null; // sku string of current open panel
+        let _ventasSKUFiltro = 'sin_imprimir';   // 'sin_imprimir' | 'todas'
+        let _ventasSKUData = null;               // { sku, movs, statuses } para re-render al togglear
+
+        // Cambia el filtro del modal 📋 Ventas y re-renderiza con los datos actuales
+        function setVentasSKUFiltro(modo) {
+            _ventasSKUFiltro = modo;
+            if (_ventasSKUData) _renderVentasSKUModal(_ventasSKUData.sku, _ventasSKUData.movs, _ventasSKUData.statuses);
+        }
 
         async function abrirVentasSKU() {
             if (!articleSelectedId) return;
@@ -4059,6 +4068,7 @@
             if (!product) return;
             const sku = product.codigo;
             _ventasSKUActive = sku;
+            _ventasSKUFiltro = 'sin_imprimir';   // arranca mostrando solo las sin imprimir
 
             const nombre = product.titulo || product.articulo || ('SKU ' + sku);
             $('modalTitle').textContent = '📋 ' + nombre;
@@ -4094,19 +4104,43 @@
 
         function _renderVentasSKUModal(sku, movs, statuses) {
             if (_ventasSKUActive !== sku || !$('modalOverlay').classList.contains('show')) return;
+            _ventasSKUData = { sku, movs, statuses };   // guardar para re-render al togglear filtro
 
             const pendingCount = statuses.filter(s => s === 'sinimprimir').length;
             const loadingCount = statuses.filter(s => s === null).length;
+            // Total de UNIDADES sin imprimir (lo que hay que descontar) — un pack cuenta sus uds.
+            let pendingUnits = 0;
+            movs.forEach((m, i) => { if (statuses[i] === 'sinimprimir') pendingUnits += _contarUnidadesMovimiento(m); });
 
             let header = `<div style="font-size:0.72em;color:var(--text-secondary);margin-bottom:10px;">SKU ${sku} · últimos 7 días · ${movs.length} movimiento${movs.length !== 1 ? 's' : ''}</div>`;
             if (pendingCount > 0) {
-                header += `<div style="padding:7px 10px;background:rgba(251,191,36,0.1);border:1px solid var(--warning);border-radius:6px;margin-bottom:10px;font-size:0.78em;color:var(--warning);font-weight:700;">📋 ${pendingCount} sin imprimir</div>`;
+                header += `<div style="padding:8px 11px;background:rgba(251,191,36,0.12);border:1px solid var(--warning);border-radius:6px;margin-bottom:10px;font-size:0.9em;color:var(--warning);font-weight:800;">📋 ${pendingUnits} unidad${pendingUnits !== 1 ? 'es' : ''} sin imprimir <span style="font-weight:500;opacity:0.85;font-size:0.85em;">· ${pendingCount} venta${pendingCount !== 1 ? 's' : ''}</span></div>`;
             } else if (loadingCount === 0) {
                 header += `<div style="padding:7px 10px;background:rgba(74,222,128,0.08);border-radius:6px;margin-bottom:10px;font-size:0.78em;color:var(--success);">✅ Todo impreso / en camino</div>`;
             }
 
+            // Botones de filtro: por defecto "Sin imprimir"; "Ver todas" muestra el resto.
+            const soloSin = _ventasSKUFiltro === 'sin_imprimir';
+            const btnOn  = 'background:var(--warning);color:#1a2744;border:1px solid var(--warning);';
+            const btnOff = 'background:var(--bg-input);color:var(--text-secondary);border:1px solid var(--border);';
+            header += `<div style="display:flex;gap:6px;margin-bottom:10px;">
+                <button onclick="setVentasSKUFiltro('sin_imprimir')" style="flex:1;padding:7px;border-radius:7px;font-size:0.8em;font-weight:700;cursor:pointer;${soloSin ? btnOn : btnOff}">📋 Sin imprimir</button>
+                <button onclick="setVentasSKUFiltro('todas')" style="flex:1;padding:7px;border-radius:7px;font-size:0.8em;font-weight:700;cursor:pointer;${!soloSin ? btnOn : btnOff}">Ver todas</button>
+            </div>`;
+
+            // Mostrar las SIN IMPRIMIR primero; después loading, impreso, error y canceladas.
+            // Dentro de cada grupo se mantiene el orden original (fecha desc).
+            const _rank = s => s === 'sinimprimir' ? 0 : s === null ? 1 : s === 'impreso' ? 2 : s === 'error' ? 3 : 4;
+            let order = movs.map((_, i) => i).sort((a, b) => _rank(statuses[a]) - _rank(statuses[b]));
+            // En modo "Sin imprimir": solo las pendientes (y las que aún están cargando).
+            if (soloSin) order = order.filter(i => statuses[i] === 'sinimprimir' || statuses[i] === null);
+
             let rows = '';
-            movs.forEach((m, i) => {
+            if (!order.length) {
+                rows = `<div style="text-align:center;padding:18px;color:var(--text-secondary);font-size:0.85em;">${soloSin ? '✅ No hay ventas sin imprimir' : 'Sin movimientos'}</div>`;
+            }
+            order.forEach(i => {
+                const m = movs[i];
                 const tipo = String(m.tipo_movimiento ?? '').toLowerCase();
                 const esCancel = tipo.includes('cancellat');
                 const esCombo = String(m.es_combo ?? '').toLowerCase() === 'si';
@@ -5474,11 +5508,11 @@
                     let substatus = order.shipping?.substatus || null;
                     let status = order.shipping?.status || null;
 
-                    // Si el status del pedido YA es terminal (shipped/delivered/cancelled…),
-                    // no hace falta la 2ª llamada a /shipments: ya sabemos que NO está pendiente
-                    // de imprimir. Solo refinamos con shipments cuando el status sigue "en juego".
-                    const statusEnJuego = !status || ['ready_to_ship', 'pending', 'handling'].includes(status);
-                    if (sid && statusEnJuego) {
+                    // SIEMPRE consultar /shipments para el substatus REAL (igual que el script de
+                    // referencia). El status a nivel pedido a veces viene desfasado (p.ej. ventas
+                    // Colecta que dicen "enviado" cuando en realidad están "listas para imprimir"),
+                    // así que NO se puede confiar en él para saltear esta llamada.
+                    if (sid) {
                         try {
                             const { token: tok2 } = await getMLTokEcomm(proxy);
                             const rs = await _fetchWithTimeout(`${proxy}/api/shipments/${sid}`, {
@@ -5890,14 +5924,14 @@
                         </div>
                         ${(r.pendingSales && r.pendingSales.length) ? `
                             <div style="margin-top:8px;border-top:1px solid var(--border);padding-top:6px;">
-                                <div style="font-size:0.68em;color:var(--text-secondary);margin-bottom:3px;">Ventas sin imprimir antes del corte:</div>
+                                <div style="font-size:0.68em;color:var(--text-secondary);margin-bottom:4px;">Ventas sin imprimir antes del corte:</div>
                                 ${r.pendingSales.map(s => `
-                                    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:3px 0;font-size:0.72em;">
-                                        <div style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                                            <span style="color:var(--text);">${s.fecha}</span>${s.esCombo ? ` <span style="font-size:0.9em;background:var(--purple);color:white;padding:0 4px;border-radius:3px;">pack</span>` : ''}
-                                            <span style="color:var(--text-secondary);"> · ${s.tienda}${s.nro ? ' · #' + s.nro : ''}</span>
+                                    <div style="padding:4px 0;">
+                                        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+                                            <div style="font-size:0.74em;color:var(--text);white-space:nowrap;">${s.fecha}${s.esCombo ? ` <span style="font-size:0.82em;background:var(--purple);color:white;padding:0 5px;border-radius:3px;">pack</span>` : ''}</div>
+                                            <div style="flex-shrink:0;color:var(--warning);font-weight:700;font-size:0.78em;white-space:nowrap;">📋 −${s.units} ud${s.units!==1?'s':''}</div>
                                         </div>
-                                        <div style="flex-shrink:0;color:var(--warning);font-weight:700;">📋 −${s.units}</div>
+                                        <div style="font-size:0.68em;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${s.tienda}${s.nro ? ' · #' + s.nro : ''}</div>
                                     </div>
                                 `).join('')}
                             </div>
